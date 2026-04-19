@@ -2,6 +2,7 @@ import { Folder, FileCode, ChevronRight, ChevronDown, User, Briefcase, Award, Ma
 import { useState } from 'react';
 import { cn } from '@/src/lib/utils';
 import { Project } from '@/src/data/portfolio';
+import SmartMarquee from './SmartMarquee';
 
 interface FileTreeProps {
   activeSection: string;
@@ -60,7 +61,7 @@ export default function FileTree({ activeSection, onSectionChange, language, pro
           )}
           {isFile && <div className="w-3.5" />}
           <Icon size={16} className={cn("text-system-muted group-hover:text-system-accent transition-colors shrink-0", isActive && "text-system-accent")} />
-          <span className={cn("text-sm truncate", isActive ? "font-medium" : "text-system-text/80")} title={label}>{label}</span>
+          <SmartMarquee text={label} isActive={isActive} className="text-sm flex-1" />
         </div>
         {!isFile && expanded[id] && (
           <div className="ml-4 border-l border-system-border">
