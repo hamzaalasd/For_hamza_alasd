@@ -48,8 +48,8 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 400;
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
         let width = img.width;
         let height = img.height;
 
@@ -68,10 +68,16 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
         
-        // Compress heavily for Firestore limits
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        // Use high-quality image smoothing
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+        }
+        
+        // Increase quality to 0.92 for much sharper retina display output
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
         setForm(f => ({ ...f, avatarUrl: dataUrl }));
       };
       img.src = event.target?.result as string;
