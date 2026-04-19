@@ -71,6 +71,7 @@ function AppInner() {
   const [editingSkill, setEditingSkill] = useState<{ skill?: any; mode: 'edit' | 'add' } | null>(null);
   const [editingBio, setEditingBio] = useState(false);
   const [editingExperience, setEditingExperience] = useState<{ exp?: any; mode: 'edit' | 'add' } | null>(null);
+  const [showAvatarPopup, setShowAvatarPopup] = useState(false);
 
   // Secret trigger: click the green dot 5 times in ≤3s
   const clickCountRef = useRef(0);
@@ -234,15 +235,18 @@ function AppInner() {
                 <div className="flex flex-col md:flex-row md:items-start gap-8">
                   {/* Avatar Column */}
                   {bio.avatarUrl && (
-                    <div className="shrink-0 relative group">
-                      <div className="absolute inset-0 bg-system-accent/20 rounded-2xl blur-lg transition duration-500 group-hover:bg-system-accent/40" />
-                      <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-2xl border border-system-border bg-system-card overflow-hidden">
+                    <div 
+                      className="shrink-0 relative group cursor-pointer"
+                      onClick={() => setShowAvatarPopup(true)}
+                    >
+                      <div className="absolute inset-0 bg-system-accent/20 rounded-full blur-lg transition duration-500 group-hover:bg-system-accent/40 group-hover:scale-105" />
+                      <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-system-border hover:border-system-accent transition-colors bg-system-card overflow-hidden">
                         <img 
                           src={bio.avatarUrl} 
                           alt="Profile Avatar" 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
-                        <div className="absolute inset-0 border border-system-border/50 rounded-2xl" />
+                        <div className="absolute inset-0 border border-system-border/50 rounded-full" />
                       </div>
                     </div>
                   )}
@@ -287,7 +291,12 @@ function AppInner() {
                         {language === 'ar' ? 'رؤية أعمالي' : 'See Work'}
                       </button>
                       <button
-                        onClick={() => window.print()}
+                        onClick={() => {
+                          const originalTitle = document.title;
+                          document.title = language === 'ar' ? `سي في ${bio.nameAr}` : `CV ${bio.nameEn}`;
+                          window.print();
+                          setTimeout(() => { document.title = originalTitle; }, 100);
+                        }}
                         className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center group"
                         title={language === 'ar' ? 'تنزيل السيرة الذاتية (PDF)' : 'Download Resume (PDF)'}
                       >
@@ -540,6 +549,40 @@ function AppInner() {
       )}
 
     </div>
+
+      {/* Avatar Popup */}
+      <AnimatePresence>
+        {showAvatarPopup && bio.avatarUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+            onClick={() => setShowAvatarPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-sm aspect-square md:max-w-md rounded-full overflow-hidden border-4 border-system-accent shadow-[0_0_50px_rgba(0,255,128,0.3)]"
+              onClick={e => e.stopPropagation()}
+            >
+              <img 
+                src={bio.avatarUrl} 
+                alt="Popup Avatar" 
+                className="w-full h-full object-cover"
+              />
+              <button 
+                onClick={() => setShowAvatarPopup(false)}
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-system-accent hover:text-black text-white rounded-full transition-colors backdrop-blur-md"
+              >
+                <X size={20} />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hidden Print View */}
       <ResumePrintView
