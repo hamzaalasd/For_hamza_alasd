@@ -504,6 +504,10 @@ function AppInner() {
             onNavigate={setActiveSection}
             activeSection={activeSection}
             language={language}
+            onAddProject={() => setEditingProject({ mode: 'add' })}
+            onAddCert={() => setEditingCert({ mode: 'add' })}
+            onAddSkill={() => setEditingSkill({ mode: 'add' })}
+            onAddExperience={() => setEditingExperience({ mode: 'add' })}
           />
         )}
       </AnimatePresence>
