@@ -156,6 +156,15 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
                 </Field>
               </div>
 
+              <div className="grid grid-cols-2 gap-4 border-t border-system-border/50 pt-4 mt-4">
+                <Field label="اسم تبويب الموقع (العنوان يظهر في المتصفح)">
+                  <Input value={form.seoTitleAr || ''} onChange={(v: string) => setForm(f => ({ ...f, seoTitleAr: v }))} placeholder="حمزة الأسد | مطور..." />
+                </Field>
+                <Field label="Website Tab Title (Browser Title)">
+                  <Input value={form.seoTitleEn || ''} onChange={(v: string) => setForm(f => ({ ...f, seoTitleEn: v }))} placeholder="Hamza | Software Dev..." />
+                </Field>
+              </div>
+
               <Field label="الوصف (عربي)">
                 <Textarea value={form.descriptionAr} onChange={(v: string) => setForm(f => ({ ...f, descriptionAr: v }))} placeholder="وصفك المهني بالعربي..." />
               </Field>
