@@ -26,10 +26,10 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
   
   return (
     <div 
-      className={`hidden print:block print:bg-white print:text-black absolute inset-0 z-[9999] bg-white min-h-screen w-full ${isRTL ? 'rtl font-sans' : 'ltr font-sans'} text-sm leading-relaxed`}
+      className={`hidden print:block absolute inset-0 z-[9999] bg-white w-full ${isRTL ? 'rtl font-sans' : 'ltr font-sans'} text-sm leading-relaxed`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <div className="max-w-[210mm] mx-auto p-12 bg-white">
+      <div className="print:w-full print:max-w-none print:p-0 max-w-[210mm] mx-auto p-12 bg-white text-black">
         
         {/* Header: Name, Title, Contact */}
         <header className="border-b-2 border-gray-900 pb-6 mb-6">
@@ -173,14 +173,14 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
 
         {/* Certifications */}
         {certifications.length > 0 && (
-          <section className="mb-8 break-inside-avoid">
-            <h3 className="text-lg font-bold text-gray-900 uppercase border-b border-gray-300 pb-1 mb-4 flex items-center gap-2">
+          <section className="mb-8">
+            <h3 className="text-lg font-bold text-gray-900 uppercase border-b border-gray-300 pb-1 mb-4 flex items-center gap-2 break-after-avoid">
               <Calendar size={16} />
               {isRTL ? 'الشهادات' : 'Certifications'}
             </h3>
             <div className="space-y-3">
               {certifications.map(cert => (
-                <div key={cert.id} className="flex justify-between items-baseline">
+                <div key={cert.id} className="flex justify-between items-baseline break-inside-avoid">
                   <div>
                     <h4 className="font-bold text-gray-900 text-sm">
                       {isRTL ? cert.title.ar : cert.title.en}
