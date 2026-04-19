@@ -39,9 +39,20 @@ function EditBtn({ onClick, label = 'Edit', danger = false }: { onClick: (e: Rea
 // ═══════════════════════════════════════════════════════
 function AppInner() {
   const {
-    isAdmin, projects, skills, certifications, bio,
+    isAdmin, loading, projects, skills, certifications, bio,
     deleteProject, deleteCert, deleteSkill,
   } = useAdmin();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-system-bg">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-system-accent border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-system-muted font-mono text-sm">LOADING_DATA...</p>
+        </div>
+      </div>
+    );
+  }
 
   const [booting, setBooting] = useState(true);
   const [language, setLanguage] = useState<Language>('ar');
@@ -280,7 +291,7 @@ function AppInner() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 font-mono font-bold text-sm">
             <Terminal size={18} className="text-system-accent" />
-            <span className="hidden sm:inline">ARCHITECT_CONSOLE_V1.0</span>
+            <span className="hidden sm:inline">ARCHITECT_CONSOLE_V1.1</span>
           </div>
         </div>
 
@@ -312,7 +323,7 @@ function AppInner() {
 
         {/* Mobile Overlay */}
         {isSidebarOpen && (
-          <div 
+          <div
             className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsSidebarOpen(false)}
           />
