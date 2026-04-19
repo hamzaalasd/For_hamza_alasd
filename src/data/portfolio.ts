@@ -12,6 +12,8 @@ export interface Project {
   architecture: string;
   type: 'web' | 'mobile' | 'fullstack';
   status: 'production' | 'development' | 'completed';
+  githubUrl?: string; // أضفنا هذا
+  demoUrl?: string;   // أضفنا هذا
 }
 
 export interface Skill {
@@ -31,6 +33,16 @@ export interface Certification {
   tech: string;
   imageUrl?: string; // URL صورة الشهادة للمعاينة
   credentialId?: string;
+}
+
+export interface Experience {
+  id: string;
+  company: { ar: string; en: string };
+  role: { ar: string; en: string };
+  startDate: string;
+  endDate: string; // 'Present' or date
+  description: { ar: string; en: string };
+  technologies: string[];
 }
 
 export const projects: Project[] = [

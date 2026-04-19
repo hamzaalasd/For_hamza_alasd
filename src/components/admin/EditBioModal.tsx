@@ -118,6 +118,26 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
                 <Textarea value={form.descriptionEn} onChange={(v: string) => setForm(f => ({ ...f, descriptionEn: v }))} placeholder="Your professional description..." />
               </Field>
 
+              {/* Avatar & Contact Info */}
+              <Field label="صورة البروفايل (رابط URL)">
+                <Input value={form.avatarUrl || ''} onChange={(v: string) => setForm(f => ({ ...f, avatarUrl: v }))} placeholder="https://..." />
+              </Field>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="WhatsApp">
+                  <Input value={form.whatsapp || ''} onChange={(v: string) => setForm(f => ({ ...f, whatsapp: v }))} placeholder="+1234567890" />
+                </Field>
+                <Field label="Email">
+                  <Input value={form.email || ''} onChange={(v: string) => setForm(f => ({ ...f, email: v }))} placeholder="hello@example.com" />
+                </Field>
+                <Field label="GitHub">
+                  <Input value={form.github || ''} onChange={(v: string) => setForm(f => ({ ...f, github: v }))} placeholder="https://github.com/..." />
+                </Field>
+                <Field label="LinkedIn">
+                  <Input value={form.linkedin || ''} onChange={(v: string) => setForm(f => ({ ...f, linkedin: v }))} placeholder="https://linkedin.com/..." />
+                </Field>
+              </div>
+
               {/* Stats */}
               <Field label="Stats / الإحصائيات">
                 <div className="space-y-2">

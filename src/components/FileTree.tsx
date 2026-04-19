@@ -31,6 +31,7 @@ export default function FileTree({ activeSection, onSectionChange, language, pro
     about: language === 'ar' ? 'عني' : 'About',
     skills: language === 'ar' ? 'المهارات' : 'Skills',
     certs: language === 'ar' ? 'الشهادات' : 'Certifications',
+    experience: language === 'ar' ? 'خبراتي' : 'Experience',
     contact: language === 'ar' ? 'اتصل بي' : 'Contact',
     // Web projects
     edas: 'EDAS',
@@ -100,6 +101,7 @@ export default function FileTree({ activeSection, onSectionChange, language, pro
             {id === 'about' && (
               <>
                 <TreeItem id="skills" label={labels.skills} icon={Info} isFile sectionId="skills" />
+                <TreeItem id="experience" label={labels.experience} icon={Briefcase} isFile sectionId="experience" />
                 <TreeItem id="bio" label={labels.about} icon={Info} isFile sectionId="bio" />
               </>
             )}

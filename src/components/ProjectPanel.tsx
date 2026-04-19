@@ -1,6 +1,6 @@
 import { Project, Language } from '@/src/data/portfolio';
 import { motion } from 'motion/react';
-import { Code2, Activity, Cpu, Globe, Smartphone, Layers, CheckCircle2, Clock, Zap } from 'lucide-react';
+import { Code2, Activity, Cpu, Globe, Smartphone, Layers, CheckCircle2, Clock, Zap, Github, ExternalLink } from 'lucide-react';
 
 interface ProjectPanelProps {
   project: Project;
@@ -76,6 +76,34 @@ export default function ProjectPanel({ project, language }: ProjectPanelProps) {
         <p className="text-xl text-system-muted max-w-2xl leading-relaxed">
           {project.description[language]}
         </p>
+
+        {/* Links */}
+        {(project.githubUrl || project.demoUrl) && (
+          <div className="flex gap-4 pt-2">
+            {project.demoUrl && (
+              <a
+                href={project.demoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 bg-system-accent text-black font-bold font-mono rounded hover:opacity-90 transition-opacity text-sm"
+              >
+                <ExternalLink size={16} />
+                {language === 'ar' ? 'معاينة حية' : 'Live Demo'}
+              </a>
+            )}
+            {project.githubUrl && (
+              <a
+                href={project.githubUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 border border-system-border hover:bg-system-border text-system-text font-bold font-mono rounded transition-colors text-sm"
+              >
+                <Github size={16} />
+                {language === 'ar' ? 'المصدر' : 'Source Code'}
+              </a>
+            )}
+          </div>
+        )}
       </header>
 
       {/* Metrics */}

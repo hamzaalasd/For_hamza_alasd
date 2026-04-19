@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Terminal, Globe, Github, Linkedin, Mail, Menu, X, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Terminal, Globe, Github, Linkedin, Mail, Menu, X, Pencil, Plus, Trash2, FileDown } from 'lucide-react';
 import TerminalBoot from './components/TerminalBoot';
 import FileTree from './components/FileTree';
 import ProjectPanel from './components/ProjectPanel';
 import SkillsGraph from './components/SkillsGraph';
 import CertTimeline from './components/CertTimeline';
+import TerminalCLI from './components/TerminalCLI';
+import GitHubStats from './components/GitHubStats';
 import { Language } from './data/portfolio';
 import { cn } from './lib/utils';
 import { AdminProvider, useAdmin } from './context/AdminContext';
@@ -15,6 +17,9 @@ import EditProjectModal from './components/admin/EditProjectModal';
 import EditCertModal from './components/admin/EditCertModal';
 import EditSkillModal from './components/admin/EditSkillModal';
 import EditBioModal from './components/admin/EditBioModal';
+import EditExperienceModal from './components/admin/EditExperienceModal';
+import ExperienceTimeline from './components/ExperienceTimeline';
+import { generatePDF } from './lib/generatePDF';
 
 // ─── EditButton helper ────────────────────────
 function EditBtn({ onClick, label = 'Edit', danger = false }: { onClick: (e: React.MouseEvent) => void; label?: string; danger?: boolean }) {
@@ -39,8 +44,8 @@ function EditBtn({ onClick, label = 'Edit', danger = false }: { onClick: (e: Rea
 // ═══════════════════════════════════════════════════════
 function AppInner() {
   const {
-    isAdmin, loading, projects, skills, certifications, bio,
-    deleteProject, deleteCert, deleteSkill,
+    isAdmin, loading, projects, skills, certifications, bio, experiences, visitors,
+    deleteProject, deleteCert, deleteSkill, deleteExperience,
   } = useAdmin();
 
   if (loading) {
@@ -65,6 +70,7 @@ function AppInner() {
   const [editingCert, setEditingCert] = useState<{ cert?: any; mode: 'edit' | 'add' } | null>(null);
   const [editingSkill, setEditingSkill] = useState<{ skill?: any; mode: 'edit' | 'add' } | null>(null);
   const [editingBio, setEditingBio] = useState(false);
+  const [editingExperience, setEditingExperience] = useState<{ exp?: any; mode: 'edit' | 'add' } | null>(null);
 
   // Secret trigger: click the green dot 5 times in ≤3s
   const clickCountRef = useRef(0);
@@ -203,34 +209,92 @@ function AppInner() {
           </div>
         );
 
+      case 'contact':
+      case 'terminal':
+        return <TerminalCLI bio={bio} language={language} />;
+
+      case 'experience':
+        return (
+          <ExperienceTimeline
+            experiences={experiences}
+            language={language}
+            isAdmin={isAdmin}
+            onEdit={exp => setEditingExperience({ exp, mode: 'edit' })}
+            onDelete={deleteExperience}
+            onAdd={() => setEditingExperience({ mode: 'add' })}
+          />
+        );
+
       case 'bio':
       default:
         return (
           <div className="space-y-12">
             <AdminWrapper onEdit={() => setEditingBio(true)}>
               <header className="space-y-6">
-                <div className="inline-block px-3 py-1 bg-system-accent/10 text-system-accent border border-system-accent/20 rounded font-mono text-xs uppercase tracking-widest">
-                  {language === 'ar' ? 'متاح للعمل' : 'Available for hire'}
-                </div>
-                <h1 className="text-6xl font-bold tracking-tighter leading-none">
-                  {language === 'ar' ? bio.nameAr : bio.nameEn}
-                  <span className="block text-2xl mt-4 text-system-muted font-normal tracking-normal">
-                    {language === 'ar' ? bio.titleAr : bio.titleEn}
-                  </span>
-                </h1>
-                <p className="text-xl text-system-muted max-w-2xl leading-relaxed">
-                  {language === 'ar' ? bio.descriptionAr : bio.descriptionEn}
-                </p>
-                <div className="flex gap-4">
-                  <button className="px-8 py-3 bg-system-accent text-black font-bold rounded hover:opacity-90 transition-opacity">
-                    {language === 'ar' ? 'تواصل معي' : 'Hire Me'}
-                  </button>
-                  <button
-                    onClick={() => setActiveSection('project-edas')}
-                    className="px-8 py-3 border border-system-border hover:bg-system-border transition-colors rounded font-bold"
-                  >
-                    {language === 'ar' ? 'رؤية أعمالي' : 'See Work'}
-                  </button>
+                <div className="flex flex-col md:flex-row md:items-start gap-8">
+                  {/* Avatar Column */}
+                  {bio.avatarUrl && (
+                    <div className="shrink-0 relative group">
+                      <div className="absolute inset-0 bg-system-accent/20 rounded-2xl blur-lg transition duration-500 group-hover:bg-system-accent/40" />
+                      <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-2xl border border-system-border bg-system-card overflow-hidden">
+                        <img 
+                          src={bio.avatarUrl} 
+                          alt="Profile Avatar" 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 border border-system-border/50 rounded-2xl" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Content Column */}
+                  <div className="flex-1 space-y-6">
+                    <div className="inline-block px-3 py-1 bg-system-accent/10 text-system-accent border border-system-accent/20 rounded font-mono text-xs uppercase tracking-widest">
+                      {language === 'ar' ? 'متاح للعمل' : 'Available for hire'}
+                    </div>
+
+                    <h1 className="text-6xl font-bold tracking-tighter leading-none">
+                      {language === 'ar' ? bio.nameAr : bio.nameEn}
+                      <span className="block text-2xl mt-4 text-system-muted font-normal tracking-normal">
+                        {language === 'ar' ? bio.titleAr : bio.titleEn}
+                      </span>
+                    </h1>
+
+                    <p className="text-xl text-system-muted max-w-2xl leading-relaxed">
+                      {language === 'ar' ? bio.descriptionAr : bio.descriptionEn}
+                    </p>
+
+                    <div className="flex gap-4">
+                      {bio.whatsapp ? (
+                        <a 
+                          href={`https://wa.me/${bio.whatsapp.replace(/[^0-9]/g, '')}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="px-8 py-3 bg-system-accent text-black font-bold rounded hover:opacity-90 transition-opacity flex items-center justify-center"
+                        >
+                          {language === 'ar' ? 'تواصل معي' : 'Hire Me'}
+                        </a>
+                      ) : (
+                        <button className="px-8 py-3 bg-system-accent text-black font-bold rounded hover:opacity-90 transition-opacity">
+                          {language === 'ar' ? 'تواصل معي' : 'Hire Me'}
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => setActiveSection('project-edas')}
+                        className="px-8 py-3 border border-system-border hover:bg-system-border transition-colors rounded font-bold"
+                      >
+                        {language === 'ar' ? 'رؤية أعمالي' : 'See Work'}
+                      </button>
+                      <button
+                        onClick={() => generatePDF({ bio, projects, skills, certifications, experiences, language })}
+                        className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center group"
+                        title={language === 'ar' ? 'تنزيل السيرة الذاتية (PDF)' : 'Download Resume (PDF)'}
+                      >
+                        <FileDown size={18} className="group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </header>
             </AdminWrapper>
@@ -279,6 +343,11 @@ function AppInner() {
                 </button>
               </div>
             )}
+
+            {/* GitHub Live Stats Widget */}
+            {bio.github && (
+              <GitHubStats username={bio.github} language={language} />
+            )}
           </div>
         );
     }
@@ -305,9 +374,27 @@ function AppInner() {
           </button>
           <div className="h-4 w-px bg-system-border mx-2" />
           <div className="flex items-center gap-3 text-system-muted">
-            <Github size={16} className="hover:text-system-accent cursor-pointer" />
-            <Linkedin size={16} className="hover:text-system-accent cursor-pointer" />
-            <Mail size={16} className="hover:text-system-accent cursor-pointer" />
+            {bio.github ? (
+              <a href={bio.github} target="_blank" rel="noreferrer" title="GitHub" className="hover:text-system-accent transition-colors">
+                <Github size={16} />
+              </a>
+            ) : (
+              <Github size={16} className="opacity-30" />
+            )}
+            {bio.linkedin ? (
+              <a href={bio.linkedin} target="_blank" rel="noreferrer" title="LinkedIn" className="hover:text-system-accent transition-colors">
+                <Linkedin size={16} />
+              </a>
+            ) : (
+              <Linkedin size={16} className="opacity-30" />
+            )}
+            {bio.email ? (
+              <a href={`mailto:${bio.email}`} title="Email" className="hover:text-system-accent transition-colors">
+                <Mail size={16} />
+              </a>
+            ) : (
+              <Mail size={16} className="opacity-30" />
+            )}
           </div>
         </div>
       </header>
@@ -377,6 +464,11 @@ function AppInner() {
             <span>SYSTEM_ONLINE</span>
           </div>
           <span className="hidden sm:inline">LOC: {activeSection.toUpperCase()}</span>
+          {visitors > 0 && (
+            <span className="hidden md:inline pl-4 border-l border-system-border">
+              VISITORS: {visitors}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <span>UTF-8</span>
@@ -435,6 +527,14 @@ function AppInner() {
         <EditBioModal
           bio={bio}
           onClose={() => setEditingBio(false)}
+        />
+      )}
+
+      {editingExperience && (
+        <EditExperienceModal
+          experience={editingExperience.exp}
+          mode={editingExperience.mode}
+          onClose={() => setEditingExperience(null)}
         />
       )}
     </div>
