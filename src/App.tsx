@@ -77,6 +77,12 @@ function AppInner() {
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Dynamic Document Title Sync
+  useEffect(() => {
+    const defaultTitle = language === 'ar' ? `${bio.nameAr} | ${bio.titleAr}` : `${bio.nameEn} | ${bio.titleEn}`;
+    document.title = language === 'ar' ? (bio.seoTitleAr || defaultTitle) : (bio.seoTitleEn || defaultTitle);
+  }, [bio.seoTitleAr, bio.seoTitleEn, bio.nameAr, bio.nameEn, bio.titleAr, bio.titleEn, language]);
+
   const handleSecretClick = useCallback(() => {
     if (isAdmin) return; // already in admin
     clickCountRef.current += 1;

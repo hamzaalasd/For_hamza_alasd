@@ -35,6 +35,8 @@ export interface BioData {
   email?: string;     // أضفنا هذا
   github?: string;    // أضفنا هذا
   linkedin?: string;  // أضفنا هذا
+  seoTitleAr?: string; // عنوان تبويبة الموقع بالعربي
+  seoTitleEn?: string; // عنوان تبويبة الموقع بالانجليزي
   stats: { numAr: string; numEn: string; labelAr: string; labelEn: string }[];
 }
 
@@ -43,6 +45,8 @@ export const defaultBio: BioData = {
   nameEn: 'Hamza Mohamed',
   titleAr: 'مطور برمجيات | Laravel & Flutter',
   titleEn: 'Software Developer | Laravel & Flutter',
+  seoTitleAr: 'حمزة الأسد | مطور Laravel & Flutter',
+  seoTitleEn: 'Hamza Al-Asad | Laravel & Flutter Developer',
   descriptionAr:
     'أبني أنظمة برمجية متكاملة من الويب إلى الموبايل — متخصص في Laravel لبناء APIs والأنظمة المؤسسية، وFlutter لتطوير تطبيقات أندرويد/iOS جاهزة للاستخدام الفعلي.',
   descriptionEn:
