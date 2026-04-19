@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Terminal as TerminalIcon } from 'lucide-react';
+import { Terminal as TerminalIcon, Mail, Phone, Github, Linkedin, MessageCircle } from 'lucide-react';
 import { BioData } from '../context/AdminContext';
 import { Language } from '../data/portfolio';
 
@@ -107,6 +107,34 @@ export default function TerminalCLI({ bio, language }: TerminalCLIProps) {
             : 'Interact with the system via command-line for quick resource access.'}
         </p>
       </header>
+
+      {/* Quick Actions for Non-Developers */}
+      <div className="flex flex-wrap gap-3 py-2">
+        {bio.whatsapp && (
+          <a href={`https://wa.me/${bio.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] rounded-xl hover:bg-[#25D366] hover:text-black transition-all hover:scale-105">
+            <MessageCircle size={16} />
+            <span className="font-bold text-sm">WhatsApp</span>
+          </a>
+        )}
+        {bio.email && (
+          <a href={`mailto:${bio.email}`} className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all hover:scale-105">
+            <Mail size={16} />
+            <span className="font-bold text-sm">Email</span>
+          </a>
+        )}
+        {bio.linkedin && (
+          <a href={bio.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-[#0A66C2]/10 border border-[#0A66C2]/30 text-[#0A66C2] rounded-xl hover:bg-[#0A66C2] hover:text-white transition-all hover:scale-105">
+            <Linkedin size={16} />
+            <span className="font-bold text-sm">LinkedIn</span>
+          </a>
+        )}
+        {bio.github && (
+          <a href={bio.github} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/30 text-white rounded-xl hover:bg-white hover:text-black transition-all hover:scale-105">
+            <Github size={16} />
+            <span className="font-bold text-sm">GitHub</span>
+          </a>
+        )}
+      </div>
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
