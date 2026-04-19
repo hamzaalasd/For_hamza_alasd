@@ -9,11 +9,15 @@ import { useAdmin } from '../../context/AdminContext';
 interface AdminToolbarProps {
   onEditBio: () => void;
   onNavigate: (section: string) => void;
+  onAddProject: () => void;
+  onAddCert: () => void;
+  onAddSkill: () => void;
+  onAddExperience: () => void;
   activeSection: string;
   language: 'ar' | 'en';
 }
 
-export default function AdminToolbar({ onEditBio, onNavigate, activeSection, language }: AdminToolbarProps) {
+export default function AdminToolbar({ onEditBio, onNavigate, onAddProject, onAddCert, onAddSkill, onAddExperience, activeSection, language }: AdminToolbarProps) {
   const { logout, resetToDefault, projects, certifications, skills } = useAdmin();
   const [collapsed, setCollapsed] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -141,6 +145,14 @@ export default function AdminToolbar({ onEditBio, onNavigate, activeSection, lan
                     badge={skills.length}
                   />
 
+                  <p className="text-[9px] font-mono text-system-muted uppercase tracking-widest px-2 pt-2 pb-1 border-t border-system-border/50">Add New</p>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <ActionButton icon={<Briefcase size={12} />} label={language === 'ar' ? '+ مشروع' : '+ Project'} onClick={onAddProject} />
+                    <ActionButton icon={<Award size={12} />} label={language === 'ar' ? '+ شهادة' : '+ Cert'} onClick={onAddCert} />
+                    <ActionButton icon={<BarChart2 size={12} />} label={language === 'ar' ? '+ مهارة' : '+ Skill'} onClick={onAddSkill} />
+                    <ActionButton icon={<User size={12} />} label={language === 'ar' ? '+ خبرة' : '+ Exp'} onClick={onAddExperience} />
+                  </div>
+
                   <div className="h-px bg-system-border my-2" />
 
                   {/* Actions */}
@@ -204,6 +216,18 @@ function NavBtn({ icon, label, active, onClick, badge, accent }: {
           {badge}
         </span>
       )}
+    </button>
+  );
+}
+
+function ActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-1 p-2 bg-system-bg border border-system-border rounded hover:border-system-accent hover:text-system-accent text-system-text transition-all"
+    >
+      {icon}
+      <span className="text-[10px] font-mono whitespace-nowrap">{label}</span>
     </button>
   );
 }
