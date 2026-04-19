@@ -24,6 +24,8 @@ const emptyProject: Project = {
   architecture: '',
   type: 'web',
   status: 'development',
+  githubUrl: '',
+  demoUrl: '',
 };
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -183,6 +185,16 @@ export default function EditProjectModal({ project, onClose, mode }: EditProject
                   <Field label="Description (English)">
                     <Input textarea value={form.description.en} onChange={(v: string) => setForm(f => ({ ...f, description: { ...f.description, en: v } }))} placeholder="Describe the project..." />
                   </Field>
+
+                  {/* Links */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="GitHub URL">
+                      <Input value={form.githubUrl || ''} onChange={(v: string) => setForm(f => ({ ...f, githubUrl: v }))} placeholder="https://github.com/..." mono />
+                    </Field>
+                    <Field label="Live Demo URL">
+                      <Input value={form.demoUrl || ''} onChange={(v: string) => setForm(f => ({ ...f, demoUrl: v }))} placeholder="https://..." mono />
+                    </Field>
+                  </div>
                 </>
               )}
 

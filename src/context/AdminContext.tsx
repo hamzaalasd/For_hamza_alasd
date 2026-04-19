@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import {
   projects as defaultProjects,
@@ -8,6 +8,7 @@ import {
   Project,
   Skill,
   Certification,
+  Experience,
 } from '../data/portfolio';
 
 // ═══════════════════════════════════════════
@@ -29,6 +30,11 @@ export interface BioData {
   titleEn: string;
   descriptionAr: string;
   descriptionEn: string;
+  avatarUrl?: string; // أضفنا هذا
+  whatsapp?: string;  // أضفنا هذا
+  email?: string;     // أضفنا هذا
+  github?: string;    // أضفنا هذا
+  linkedin?: string;  // أضفنا هذا
   stats: { numAr: string; numEn: string; labelAr: string; labelEn: string }[];
 }
 
@@ -41,6 +47,11 @@ export const defaultBio: BioData = {
     'أبني أنظمة برمجية متكاملة من الويب إلى الموبايل — متخصص في Laravel لبناء APIs والأنظمة المؤسسية، وFlutter لتطوير تطبيقات أندرويد/iOS جاهزة للاستخدام الفعلي.',
   descriptionEn:
     'I build end-to-end software systems from web to mobile — specialized in Laravel for APIs & enterprise systems, and Flutter for production-ready Android/iOS applications.',
+  avatarUrl: '',
+  whatsapp: '+967770000000',
+  email: 'hello@example.com',
+  github: 'https://github.com/hamzaalasd',
+  linkedin: 'https://linkedin.com/in/hamzaalasd',
   stats: [
     { numAr: '+5', numEn: '5+', labelAr: 'مشروع منتج', labelEn: 'Live Projects' },
     { numAr: '3', numEn: '3', labelAr: 'نظام مؤسسي', labelEn: 'Enterprise Systems' },
@@ -58,6 +69,8 @@ interface AdminContextType {
   loading: boolean;
   login: (password: string) => boolean;
   logout: () => void;
+  // Visitors
+  visitors: number;
   // Data
   projects: Project[];
   skills: Skill[];
@@ -77,6 +90,11 @@ interface AdminContextType {
   deleteSkill: (id: string) => void;
   // Bio
   updateBio: (b: BioData) => void;
+  // Experience CRUD
+  experiences: Experience[];
+  updateExperience: (e: Experience) => void;
+  addExperience: (e: Experience) => void;
+  deleteExperience: (id: string) => void;
   // Reset
   resetToDefault: () => void;
 }
@@ -123,6 +141,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [skills, setSkills] = useState<Skill[]>(() => lsLoad('skills', defaultSkills));
   const [certifications, setCertifications] = useState<Certification[]>(() => lsLoad('certs', defaultCerts));
   const [bio, setBio] = useState<BioData>(() => lsLoad('bio', defaultBio));
+  const [experiences, setExperiences] = useState<Experience[]>(() => lsLoad('experiences', []));
+  const [visitors, setVisitors] = useState(0);
 
   // ─── Load from Firestore (with 6s timeout) ───
   useEffect(() => {
@@ -132,13 +152,33 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       );
       try {
         const ref = doc(db, 'portfolio', 'data');
+        const visitorRef = doc(db, 'portfolio', 'visitors');
+        
+        // Load main data
         const snap = await Promise.race([getDoc(ref), timeout]) as any;
+
+        // Try increment visitor count logic in background
+        if (!isAdmin) {
+          try {
+            await setDoc(visitorRef, { count: increment(1) }, { merge: true });
+          } catch(e) {/* ignore visitor update fail */}
+        }
+
+        // Get visitor count
+        try {
+          const vSnap = await getDoc(visitorRef);
+          if (vSnap.exists()) {
+            setVisitors(vSnap.data()?.count || 0);
+          }
+        } catch(e) {}
+        
         if (snap && snap.exists()) {
           const data = snap.data();
-          if (data.projects) { setProjects(data.projects); lsSave({ projects: data.projects }); }
-          if (data.skills)   { setSkills(data.skills);     lsSave({ skills: data.skills }); }
-          if (data.certs)    { setCertifications(data.certs); lsSave({ certs: data.certs }); }
-          if (data.bio)      { setBio(data.bio);            lsSave({ bio: data.bio }); }
+          if (data.projects)     { setProjects(data.projects);          lsSave({ projects: data.projects }); }
+          if (data.skills)       { setSkills(data.skills);              lsSave({ skills: data.skills }); }
+          if (data.certs)        { setCertifications(data.certs);       lsSave({ certs: data.certs }); }
+          if (data.bio)          { setBio(data.bio);                    lsSave({ bio: data.bio }); }
+          if (data.experiences)  { setExperiences(data.experiences);   lsSave({ experiences: data.experiences }); }
           console.log('✅ Firestore data loaded');
         } else {
           console.log('ℹ️ No Firestore data yet, using defaults');
@@ -245,6 +285,31 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     lsSave({ bio: b });
   }, []);
 
+  // Experiences
+  const updateExperience = useCallback((e: Experience) => {
+    setExperiences(prev => {
+      const next = prev.map(x => x.id === e.id ? e : x);
+      saveToFirestore({ experiences: next }); lsSave({ experiences: next });
+      return next;
+    });
+  }, []);
+
+  const addExperience = useCallback((e: Experience) => {
+    setExperiences(prev => {
+      const next = [...prev, e];
+      saveToFirestore({ experiences: next }); lsSave({ experiences: next });
+      return next;
+    });
+  }, []);
+
+  const deleteExperience = useCallback((id: string) => {
+    setExperiences(prev => {
+      const next = prev.filter(x => x.id !== id);
+      saveToFirestore({ experiences: next }); lsSave({ experiences: next });
+      return next;
+    });
+  }, []);
+
   // Reset
   const resetToDefault = useCallback(async () => {
     setProjects(defaultProjects);
@@ -262,11 +327,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   return (
     <AdminContext.Provider value={{
       isAdmin, loading, login, logout,
-      projects, skills, certifications, bio,
+      projects, skills, certifications, bio, experiences,
       updateProject, addProject, deleteProject,
       updateCert, addCert, deleteCert,
       updateSkill, addSkill, deleteSkill,
-      updateBio, resetToDefault,
+      updateBio,
+      updateExperience, addExperience, deleteExperience,
+      resetToDefault,
+      visitors,
     }}>
       {children}
     </AdminContext.Provider>
