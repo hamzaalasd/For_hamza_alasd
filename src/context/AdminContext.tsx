@@ -90,7 +90,9 @@ async function saveToFirestore(data: Record<string, unknown>) {
     await setDoc(ref, data, { merge: true });
     console.log('✅ Firestore saved:', Object.keys(data));
   } catch (err: any) {
-    console.error('❌ Firestore save error:', err?.code, err?.message);
+    const msg = err?.message || 'Unknown save error';
+    console.error('❌ Firestore save error:', err?.code, msg);
+    alert('❌ خطأ في الحفظ السحابي (راجع Console):\n' + msg);
   }
 }
 
