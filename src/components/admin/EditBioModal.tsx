@@ -39,6 +39,46 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
   const [form, setForm] = useState<BioData>(JSON.parse(JSON.stringify(bio)));
   const [saved, setSaved] = useState(false);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Compress heavily for Firestore limits
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setForm(f => ({ ...f, avatarUrl: dataUrl }));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     updateBio(form);
     setSaved(true);
@@ -119,8 +159,22 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
               </Field>
 
               {/* Avatar & Contact Info */}
-              <Field label="صورة البروفايل (رابط URL)">
-                <Input value={form.avatarUrl || ''} onChange={(v: string) => setForm(f => ({ ...f, avatarUrl: v }))} placeholder="https://..." />
+              <Field label="صورة البروفايل (رفع من الجهاز أو رابط)">
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="flex-1 px-3 py-2 bg-system-bg border border-system-border rounded-lg text-sm text-system-text outline-none focus:border-system-accent transition-colors file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-system-accent file:text-black hover:file:bg-system-accent/80 file:cursor-pointer"
+                  />
+                  <span className="text-xs text-system-muted">أو ضِف رابط:</span>
+                  <input
+                    value={form.avatarUrl || ''}
+                    onChange={(e) => setForm(f => ({ ...f, avatarUrl: e.target.value }))}
+                    placeholder="https://..."
+                    className="w-1/3 px-3 py-2 bg-system-bg border border-system-border rounded-lg text-sm text-system-text placeholder:text-system-muted/40 outline-none focus:border-system-accent transition-colors"
+                  />
+                </div>
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
