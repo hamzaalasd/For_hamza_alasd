@@ -19,7 +19,7 @@ import EditSkillModal from './components/admin/EditSkillModal';
 import EditBioModal from './components/admin/EditBioModal';
 import EditExperienceModal from './components/admin/EditExperienceModal';
 import ExperienceTimeline from './components/ExperienceTimeline';
-import { generatePDF } from './lib/generatePDF';
+import ResumePrintView from './components/ResumePrintView';
 
 // ─── EditButton helper ────────────────────────
 function EditBtn({ onClick, label = 'Edit', danger = false }: { onClick: (e: React.MouseEvent) => void; label?: string; danger?: boolean }) {
@@ -287,7 +287,7 @@ function AppInner() {
                         {language === 'ar' ? 'رؤية أعمالي' : 'See Work'}
                       </button>
                       <button
-                        onClick={() => generatePDF({ bio, projects, skills, certifications, experiences, language })}
+                        onClick={() => window.print()}
                         className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center group"
                         title={language === 'ar' ? 'تنزيل السيرة الذاتية (PDF)' : 'Download Resume (PDF)'}
                       >
@@ -354,7 +354,8 @@ function AppInner() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden selection:bg-system-accent selection:text-black">
+    <>
+    <div id="main-app" className="h-screen flex flex-col overflow-hidden selection:bg-system-accent selection:text-black">
       {/* Top Bar */}
       <header className="h-12 border-b border-system-border bg-system-bg flex items-center justify-between px-4 z-30">
         <div className="flex items-center gap-4">
@@ -537,7 +538,19 @@ function AppInner() {
           onClose={() => setEditingExperience(null)}
         />
       )}
+
     </div>
+
+      {/* Hidden Print View */}
+      <ResumePrintView
+        bio={bio}
+        projects={projects}
+        skills={skills}
+        certifications={certifications}
+        experiences={experiences}
+        language={language}
+      />
+    </>
   );
 }
 
