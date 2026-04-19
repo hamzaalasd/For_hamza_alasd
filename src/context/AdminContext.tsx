@@ -88,41 +88,68 @@ async function saveToFirestore(data: Record<string, unknown>) {
   try {
     const ref = doc(db, 'portfolio', 'data');
     await setDoc(ref, data, { merge: true });
-  } catch (err) {
-    console.error('Firestore save error:', err);
+    console.log('✅ Firestore saved:', Object.keys(data));
+  } catch (err: any) {
+    console.error('❌ Firestore save error:', err?.code, err?.message);
   }
 }
+
+// ─── localStorage backup ──────────────────────
+const LS_KEY = 'pf_data_v3';
+function lsSave(data: Record<string, unknown>) {
+  try {
+    const ex = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+    localStorage.setItem(LS_KEY, JSON.stringify({ ...ex, ...data }));
+  } catch {/* ignore */}
+}
+function lsLoad<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return fallback;
+    return JSON.parse(raw)[key] ?? fallback;
+  } catch { return fallback; }
+}
+
+
 
 // ─── Provider ────────────────────────────────
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [projects, setProjects] = useState<Project[]>(defaultProjects);
-  const [skills, setSkills] = useState<Skill[]>(defaultSkills);
-  const [certifications, setCertifications] = useState<Certification[]>(defaultCerts);
-  const [bio, setBio] = useState<BioData>(defaultBio);
+  // Initialize immediately from localStorage so UI shows fast
+  const [projects, setProjects] = useState<Project[]>(() => lsLoad('projects', defaultProjects));
+  const [skills, setSkills] = useState<Skill[]>(() => lsLoad('skills', defaultSkills));
+  const [certifications, setCertifications] = useState<Certification[]>(() => lsLoad('certs', defaultCerts));
+  const [bio, setBio] = useState<BioData>(() => lsLoad('bio', defaultBio));
 
-  // ─── Load from Firestore on startup ──────────
+  // ─── Load from Firestore (with 6s timeout) ───
   useEffect(() => {
     const loadData = async () => {
+      const timeout = new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 6000)
+      );
       try {
         const ref = doc(db, 'portfolio', 'data');
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
+        const snap = await Promise.race([getDoc(ref), timeout]) as any;
+        if (snap && snap.exists()) {
           const data = snap.data();
-          if (data.projects) setProjects(data.projects);
-          if (data.skills) setSkills(data.skills);
-          if (data.certs) setCertifications(data.certs);
-          if (data.bio) setBio(data.bio);
+          if (data.projects) { setProjects(data.projects); lsSave({ projects: data.projects }); }
+          if (data.skills)   { setSkills(data.skills);     lsSave({ skills: data.skills }); }
+          if (data.certs)    { setCertifications(data.certs); lsSave({ certs: data.certs }); }
+          if (data.bio)      { setBio(data.bio);            lsSave({ bio: data.bio }); }
+          console.log('✅ Firestore data loaded');
+        } else {
+          console.log('ℹ️ No Firestore data yet, using defaults');
         }
-      } catch (err) {
-        console.error('Firestore load error:', err);
+      } catch (err: any) {
+        console.warn('⚠️ Firestore load failed:', err?.message || err?.code || err);
       } finally {
         setLoading(false);
       }
     };
     loadData();
   }, []);
+
 
   const login = useCallback((password: string) => {
     if (_verify(password)) {
@@ -138,7 +165,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const updateProject = useCallback((p: Project) => {
     setProjects(prev => {
       const next = prev.map(x => x.id === p.id ? p : x);
-      saveToFirestore({ projects: next });
+      saveToFirestore({ projects: next }); lsSave({ projects: next });
       return next;
     });
   }, []);
@@ -146,7 +173,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const addProject = useCallback((p: Project) => {
     setProjects(prev => {
       const next = [...prev, p];
-      saveToFirestore({ projects: next });
+      saveToFirestore({ projects: next }); lsSave({ projects: next });
       return next;
     });
   }, []);
@@ -154,7 +181,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const deleteProject = useCallback((id: string) => {
     setProjects(prev => {
       const next = prev.filter(x => x.id !== id);
-      saveToFirestore({ projects: next });
+      saveToFirestore({ projects: next }); lsSave({ projects: next });
       return next;
     });
   }, []);
@@ -163,7 +190,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const updateCert = useCallback((c: Certification) => {
     setCertifications(prev => {
       const next = prev.map(x => x.id === c.id ? c : x);
-      saveToFirestore({ certs: next });
+      saveToFirestore({ certs: next }); lsSave({ certs: next });
       return next;
     });
   }, []);
@@ -171,7 +198,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const addCert = useCallback((c: Certification) => {
     setCertifications(prev => {
       const next = [...prev, c];
-      saveToFirestore({ certs: next });
+      saveToFirestore({ certs: next }); lsSave({ certs: next });
       return next;
     });
   }, []);
@@ -179,7 +206,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const deleteCert = useCallback((id: string) => {
     setCertifications(prev => {
       const next = prev.filter(x => x.id !== id);
-      saveToFirestore({ certs: next });
+      saveToFirestore({ certs: next }); lsSave({ certs: next });
       return next;
     });
   }, []);
@@ -188,7 +215,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const updateSkill = useCallback((s: Skill) => {
     setSkills(prev => {
       const next = prev.map(x => x.id === s.id ? s : x);
-      saveToFirestore({ skills: next });
+      saveToFirestore({ skills: next }); lsSave({ skills: next });
       return next;
     });
   }, []);
@@ -196,7 +223,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const addSkill = useCallback((s: Skill) => {
     setSkills(prev => {
       const next = [...prev, s];
-      saveToFirestore({ skills: next });
+      saveToFirestore({ skills: next }); lsSave({ skills: next });
       return next;
     });
   }, []);
@@ -204,7 +231,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const deleteSkill = useCallback((id: string) => {
     setSkills(prev => {
       const next = prev.filter(x => x.id !== id);
-      saveToFirestore({ skills: next });
+      saveToFirestore({ skills: next }); lsSave({ skills: next });
       return next;
     });
   }, []);
@@ -213,6 +240,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const updateBio = useCallback((b: BioData) => {
     setBio(b);
     saveToFirestore({ bio: b });
+    lsSave({ bio: b });
   }, []);
 
   // Reset
