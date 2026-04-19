@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import {
   projects as defaultProjects,
   skills as defaultSkills,
@@ -47,9 +49,13 @@ export const defaultBio: BioData = {
   ],
 };
 
+// ─── Firestore document ID ───────────────────
+const FIRESTORE_DOC = 'portfolio/data';
+
 // ─── Context Type ────────────────────────────
 interface AdminContextType {
   isAdmin: boolean;
+  loading: boolean;
   login: (password: string) => boolean;
   logout: () => void;
   // Data
@@ -77,34 +83,46 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | null>(null);
 
-const STORAGE_KEY = 'pf_data_v2';
-
-// ─── Helper ──────────────────────────────────
-function load<T>(key: string, fallback: T): T {
+// ─── Save to Firestore ────────────────────────
+async function saveToFirestore(data: Record<string, unknown>) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return parsed[key] ?? fallback;
-  } catch {
-    return fallback;
+    const ref = doc(db, 'portfolio', 'data');
+    await setDoc(ref, data, { merge: true });
+  } catch (err) {
+    console.error('Firestore save error:', err);
   }
-}
-
-function save(data: Record<string, unknown>) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...existing, ...data }));
-  } catch {/* ignore */}
 }
 
 // ─── Provider ────────────────────────────────
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [projects, setProjects] = useState<Project[]>(() => load('projects', defaultProjects));
-  const [skills, setSkills] = useState<Skill[]>(() => load('skills', defaultSkills));
-  const [certifications, setCertifications] = useState<Certification[]>(() => load('certs', defaultCerts));
-  const [bio, setBio] = useState<BioData>(() => load('bio', defaultBio));
+  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>(defaultProjects);
+  const [skills, setSkills] = useState<Skill[]>(defaultSkills);
+  const [certifications, setCertifications] = useState<Certification[]>(defaultCerts);
+  const [bio, setBio] = useState<BioData>(defaultBio);
+
+  // ─── Load from Firestore on startup ──────────
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const ref = doc(db, 'portfolio', 'data');
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.projects) setProjects(data.projects);
+          if (data.skills) setSkills(data.skills);
+          if (data.certs) setCertifications(data.certs);
+          if (data.bio) setBio(data.bio);
+        }
+      } catch (err) {
+        console.error('Firestore load error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const login = useCallback((password: string) => {
     if (_verify(password)) {
@@ -120,7 +138,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const updateProject = useCallback((p: Project) => {
     setProjects(prev => {
       const next = prev.map(x => x.id === p.id ? p : x);
-      save({ projects: next });
+      saveToFirestore({ projects: next });
       return next;
     });
   }, []);
@@ -128,7 +146,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const addProject = useCallback((p: Project) => {
     setProjects(prev => {
       const next = [...prev, p];
-      save({ projects: next });
+      saveToFirestore({ projects: next });
       return next;
     });
   }, []);
@@ -136,7 +154,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const deleteProject = useCallback((id: string) => {
     setProjects(prev => {
       const next = prev.filter(x => x.id !== id);
-      save({ projects: next });
+      saveToFirestore({ projects: next });
       return next;
     });
   }, []);
@@ -145,7 +163,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const updateCert = useCallback((c: Certification) => {
     setCertifications(prev => {
       const next = prev.map(x => x.id === c.id ? c : x);
-      save({ certs: next });
+      saveToFirestore({ certs: next });
       return next;
     });
   }, []);
@@ -153,7 +171,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const addCert = useCallback((c: Certification) => {
     setCertifications(prev => {
       const next = [...prev, c];
-      save({ certs: next });
+      saveToFirestore({ certs: next });
       return next;
     });
   }, []);
@@ -161,7 +179,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const deleteCert = useCallback((id: string) => {
     setCertifications(prev => {
       const next = prev.filter(x => x.id !== id);
-      save({ certs: next });
+      saveToFirestore({ certs: next });
       return next;
     });
   }, []);
@@ -170,7 +188,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const updateSkill = useCallback((s: Skill) => {
     setSkills(prev => {
       const next = prev.map(x => x.id === s.id ? s : x);
-      save({ skills: next });
+      saveToFirestore({ skills: next });
       return next;
     });
   }, []);
@@ -178,7 +196,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const addSkill = useCallback((s: Skill) => {
     setSkills(prev => {
       const next = [...prev, s];
-      save({ skills: next });
+      saveToFirestore({ skills: next });
       return next;
     });
   }, []);
@@ -186,7 +204,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const deleteSkill = useCallback((id: string) => {
     setSkills(prev => {
       const next = prev.filter(x => x.id !== id);
-      save({ skills: next });
+      saveToFirestore({ skills: next });
       return next;
     });
   }, []);
@@ -194,21 +212,26 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   // Bio
   const updateBio = useCallback((b: BioData) => {
     setBio(b);
-    save({ bio: b });
+    saveToFirestore({ bio: b });
   }, []);
 
   // Reset
-  const resetToDefault = useCallback(() => {
+  const resetToDefault = useCallback(async () => {
     setProjects(defaultProjects);
     setSkills(defaultSkills);
     setCertifications(defaultCerts);
     setBio(defaultBio);
-    localStorage.removeItem(STORAGE_KEY);
+    await saveToFirestore({
+      projects: defaultProjects,
+      skills: defaultSkills,
+      certs: defaultCerts,
+      bio: defaultBio,
+    });
   }, []);
 
   return (
     <AdminContext.Provider value={{
-      isAdmin, login, logout,
+      isAdmin, loading, login, logout,
       projects, skills, certifications, bio,
       updateProject, addProject, deleteProject,
       updateCert, addCert, deleteCert,

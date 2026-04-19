@@ -77,7 +77,7 @@ export default function PasswordModal({ onClose }: PasswordModalProps) {
               {/* Terminal display */}
               <div className="p-4 bg-black rounded-xl border border-system-border font-mono text-xs space-y-1">
                 <p className="text-system-muted">$ ssh admin@portfolio.local</p>
-                <p className="text-system-accent">Connected to ARCHITECT_CONSOLE_V1.0</p>
+                <p className="text-system-accent">Connected to ARCHITECT_CONSOLE_V1.1</p>
                 <p className="text-system-muted">Awaiting authentication...</p>
                 <p className="text-system-text flex items-center gap-1">
                   <span className="text-system-accent">▶</span>
@@ -112,11 +112,10 @@ export default function PasswordModal({ onClose }: PasswordModalProps) {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••••••••"
-                      className={`w-full px-4 py-3 bg-system-bg border rounded-xl font-mono text-sm text-system-text placeholder:text-system-muted/40 outline-none transition-all pr-10 ${
-                        error
+                      className={`w-full px-4 py-3 bg-system-bg border rounded-xl font-mono text-sm text-system-text placeholder:text-system-muted/40 outline-none transition-all pr-10 ${error
                           ? 'border-red-500/60 focus:border-red-500'
                           : 'border-system-border focus:border-system-accent'
-                      }`}
+                        }`}
                     />
                     <button
                       type="button"
