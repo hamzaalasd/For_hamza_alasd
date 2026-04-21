@@ -1,6 +1,7 @@
 import { Project, Language } from '@/src/data/portfolio';
 import { motion } from 'motion/react';
 import { Code2, Activity, Cpu, Globe, Smartphone, Layers, CheckCircle2, Clock, Zap, Github, ExternalLink } from 'lucide-react';
+import ProjectImageGallery from './ProjectImageGallery';
 
 interface ProjectPanelProps {
   project: Project;
@@ -105,6 +106,15 @@ export default function ProjectPanel({ project, language }: ProjectPanelProps) {
           </div>
         )}
       </header>
+
+      {/* Image Gallery */}
+      {project.images && project.images.length > 0 && (
+        <ProjectImageGallery
+          images={project.images}
+          language={language}
+          projectTitle={project.title[language]}
+        />
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

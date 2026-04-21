@@ -12,8 +12,9 @@ export interface Project {
   architecture: string;
   type: 'web' | 'mobile' | 'fullstack';
   status: 'production' | 'development' | 'completed';
-  githubUrl?: string; // أضفنا هذا
-  demoUrl?: string;   // أضفنا هذا
+  githubUrl?: string;
+  demoUrl?: string;
+  images?: string[]; // صور المشروع
 }
 
 export interface Skill {
