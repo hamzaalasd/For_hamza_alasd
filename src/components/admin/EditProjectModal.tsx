@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Save, Plus, Trash2, ChevronDown } from 'lucide-react';
+import { X, Save, Plus, Trash2, Images } from 'lucide-react';
 import { Project } from '../../data/portfolio';
 import { useAdmin } from '../../context/AdminContext';
+import ImageUploader from './ImageUploader';
 
 interface EditProjectModalProps {
   project?: Project;
@@ -57,7 +58,7 @@ export default function EditProjectModal({ project, onClose, mode }: EditProject
   const { updateProject, addProject } = useAdmin();
   const [form, setForm] = useState<Project>(project || { ...emptyProject, id: Date.now().toString() });
   const [techInput, setTechInput] = useState('');
-  const [tab, setTab] = useState<'basic' | 'details' | 'code'>('basic');
+  const [tab, setTab] = useState<'basic' | 'details' | 'code' | 'images'>('basic');
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -123,8 +124,8 @@ export default function EditProjectModal({ project, onClose, mode }: EditProject
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 px-6 pt-4 shrink-0">
-              {(['basic', 'details', 'code'] as const).map(t => (
+            <div className="flex gap-1 px-6 pt-4 shrink-0 flex-wrap">
+              {(['basic', 'details', 'code', 'images'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -283,6 +284,20 @@ export default function EditProjectModal({ project, onClose, mode }: EditProject
                     className="w-full px-4 py-3 bg-black border border-system-border rounded-xl text-sm text-system-accent font-mono outline-none focus:border-system-accent transition-colors resize-none"
                   />
                 </Field>
+              )}
+
+              {tab === 'images' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-mono text-system-muted">
+                    <Images size={13} className="text-system-accent" />
+                    <span>الصورة الأولى ستظهر كصورة رئيسية في المشروع</span>
+                  </div>
+                  <ImageUploader
+                    projectId={form.id}
+                    images={form.images || []}
+                    onChange={imgs => setForm(f => ({ ...f, images: imgs }))}
+                  />
+                </div>
               )}
             </div>
 
