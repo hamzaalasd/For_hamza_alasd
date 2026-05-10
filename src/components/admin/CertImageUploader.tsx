@@ -3,8 +3,9 @@ import type { DragEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, X, Loader2, CheckCircle2, AlertCircle,
-  ImagePlus, Trash2, ZoomIn, Award, ShieldCheck
+  ImagePlus, Trash2, ZoomIn, Award, ShieldCheck, Crop
 } from 'lucide-react';
+import ImageCropper from './ImageCropper';
 
 interface CertImageUploaderProps {
   certId: string;
@@ -19,6 +20,7 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback((file: File) => {
@@ -28,58 +30,15 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
     }
     
     setError(null);
-    setStatus('processing');
-
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        // Increase max size slightly for certificates to retain text readability
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
-        }
-        
-        // High quality JPEG compression
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        onChange(dataUrl);
-        setStatus('done');
-      };
-      img.onerror = () => {
-        setStatus('error');
-        setError('فشل في قراءة الصورة');
-      };
-      img.src = event.target?.result as string;
+      setRawImageSrc(event.target?.result as string);
     };
     reader.onerror = () => {
-      setStatus('error');
       setError('حدث خطأ أثناء قراءة الملف');
     };
     reader.readAsDataURL(file);
-  }, [onChange]);
+  }, []);
 
   const handleFiles = (files: FileList | null) => {
     if (files && files[0]) processFile(files[0]);
@@ -157,6 +116,23 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
                   title="تكبير"
                 >
                   <ZoomIn size={16} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (imageUrl && !imageUrl.startsWith('http')) {
+                      setRawImageSrc(imageUrl);
+                    } else {
+                       // If it's a remote URL, we can't easily crop it without CORS issues,
+                       // but we can try setting it or ask user to re-upload.
+                       setRawImageSrc(imageUrl);
+                    }
+                  }}
+                  className="p-2.5 bg-system-accent/80 backdrop-blur border border-system-accent/40 text-black rounded-xl hover:bg-system-accent transition-colors"
+                  title="تحرير وقص"
+                >
+                  <Crop size={16} />
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -304,6 +280,19 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {rawImageSrc && (
+          <ImageCropper
+            imageSrc={rawImageSrc}
+            onClose={() => setRawImageSrc(null)}
+            onCropComplete={(croppedBase64) => {
+              onChange(croppedBase64);
+              setStatus('done');
+              setRawImageSrc(null);
+            }}
+          />
         )}
       </AnimatePresence>
     </div>
