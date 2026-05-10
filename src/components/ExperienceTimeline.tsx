@@ -11,17 +11,7 @@ interface ExperienceTimelineProps {
   onAdd: () => void;
 }
 
-function formatDate(dateStr: string, language: Language) {
-  if (dateStr.toLowerCase() === 'present') {
-    return language === 'ar' ? 'حتى الآن' : 'Present';
-  }
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short' });
-  } catch {
-    return dateStr;
-  }
-}
+import { formatDate } from '../lib/utils';
 
 export default function ExperienceTimeline({ experiences, language, isAdmin, onEdit, onDelete, onAdd }: ExperienceTimelineProps) {
   return (

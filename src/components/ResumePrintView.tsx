@@ -10,37 +10,11 @@ interface ResumePrintViewProps {
   language: Language;
 }
 
-/**
- * Smart date formatter — handles:
- *  - ISO "2024-03-01"  → "Mar 2024"
- *  - YYYY-MM "2024-03" → "Mar 2024"
- *  - Already-formatted Arabic/English strings → returned AS-IS (no "Invalid Date")
- *  - "Present" / "حتى الآن"  → localized "Present"
- */
-function fmt(raw: string, lang: Language): string {
-  if (!raw) return '';
-  const trim = raw.trim();
-  const lower = trim.toLowerCase();
-  if (lower === 'present' || trim === 'حتى الآن' || trim === 'الآن') {
-    return lang === 'ar' ? 'حتى الآن' : 'Present';
-  }
-  // Try parsing as Date only for ISO-like strings
-  const isISO = /^\d{4}-\d{2}/.test(trim) || /^\d{4}$/.test(trim);
-  if (isISO) {
-    const d = new Date(trim.length === 7 ? trim + '-01' : trim);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
-        year: 'numeric', month: 'short',
-      });
-    }
-  }
-  // Already human-readable (Arabic month names, etc.) — return as-is
-  return trim;
-}
+import { formatDate } from '../lib/utils';
 
 function range(s: string, e: string, lang: Language) {
-  const sf = fmt(s, lang);
-  const ef = fmt(e, lang);
+  const sf = formatDate(s, lang);
+  const ef = formatDate(e, lang);
   if (sf && ef) return `${sf} – ${ef}`;
   return sf || ef;
 }
@@ -77,12 +51,8 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
   const title   = ar ? bio.titleAr   : bio.titleEn;
   const summary = ar ? bio.descriptionAr : bio.descriptionEn;
 
-  // Reverse-chronological: "Present" jobs first, then by endDate desc
-  const exps = [...experiences].sort((a, b) => {
-    const aE = a.endDate.toLowerCase().includes('present') || a.endDate.includes('الآن') ? '9999' : a.endDate;
-    const bE = b.endDate.toLowerCase().includes('present') || b.endDate.includes('الآن') ? '9999' : b.endDate;
-    return bE.localeCompare(aE);
-  });
+  // Use experiences exactly as ordered in the admin panel (so Programming comes first if configured that way)
+  const exps = experiences;
 
   const certs = [...certifications].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -145,7 +115,7 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
                     <td style={{ padding: 0, verticalAlign: 'top' }}>
                       <strong style={{ fontSize: '9.5pt', color: K }}>{ar ? exp.role.ar : exp.role.en}</strong>
                     </td>
-                    <td style={{ padding: 0, textAlign: ar ? 'left' : 'right', fontSize: '8pt', color: G, fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                    <td style={{ padding: 0, textAlign: ar ? 'left' : 'right', fontSize: '8pt', color: G, fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top' }} dir="ltr">
                       {range(exp.startDate, exp.endDate, language)}
                     </td>
                   </tr></tbody>
@@ -236,8 +206,8 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
                         — {c.issuer}{c.credentialId ? ` · ${c.credentialId}` : ''}
                       </span>
                     </td>
-                    <td style={{ paddingBottom: '3pt', textAlign: ar ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: '8pt', color: G, fontWeight: 600, width: '65pt', verticalAlign: 'top' }}>
-                      {fmt(c.date, language)}
+                    <td style={{ paddingBottom: '3pt', textAlign: ar ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: '8pt', color: G, fontWeight: 600, width: '65pt', verticalAlign: 'top' }} dir="ltr">
+                      {formatDate(c.date, language)}
                     </td>
                   </tr>
                 ))}
