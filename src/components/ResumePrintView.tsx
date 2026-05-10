@@ -1,19 +1,3 @@
-/**
- * ╔══════════════════════════════════════════════════════════════════╗
- * ║  ATS-OPTIMISED SINGLE-PAGE RESUME  — Expert Level               ║
- * ║                                                                  ║
- * ║  Rules applied:                                                  ║
- * ║  • ONE page — enforced via tight CSS + content limits           ║
- * ║  • Dates: "Jan 2024 – Present" (no ISO, no numbers-only)        ║
- * ║  • Reverse chronological within every section                   ║
- * ║  • ATS keywords embedded naturally in bullets                   ║
- * ║  • No SVG / icons inside parseable text lines                   ║
- * ║  • Table-based layout — ATS reads tables correctly              ║
- * ║  • Font: Arial — universally parseable                          ║
- * ║  • Inline styles only — guaranteed print fidelity               ║
- * ╚══════════════════════════════════════════════════════════════════╝
- */
-
 import { Project, Skill, Certification, Experience, Language } from '../data/portfolio';
 import { BioData } from '../context/AdminContext';
 
@@ -26,375 +10,243 @@ interface ResumePrintViewProps {
   language: Language;
 }
 
-// ─── Date formatter — ATS best practice: "Jan 2024" not "2024-01-10" ──────────
-function fmt(dateStr: string, lang: Language): string {
-  if (!dateStr) return '';
-  const lower = dateStr.toLowerCase();
-  if (lower === 'present' || lower === 'حتى الآن') {
+/**
+ * Smart date formatter — handles:
+ *  - ISO "2024-03-01"  → "Mar 2024"
+ *  - YYYY-MM "2024-03" → "Mar 2024"
+ *  - Already-formatted Arabic/English strings → returned AS-IS (no "Invalid Date")
+ *  - "Present" / "حتى الآن"  → localized "Present"
+ */
+function fmt(raw: string, lang: Language): string {
+  if (!raw) return '';
+  const trim = raw.trim();
+  const lower = trim.toLowerCase();
+  if (lower === 'present' || trim === 'حتى الآن' || trim === 'الآن') {
     return lang === 'ar' ? 'حتى الآن' : 'Present';
   }
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
-      year: 'numeric',
-      month: 'short',   // "Jan" / "يناير"
-    });
-  } catch {
-    return dateStr;
+  // Try parsing as Date only for ISO-like strings
+  const isISO = /^\d{4}-\d{2}/.test(trim) || /^\d{4}$/.test(trim);
+  if (isISO) {
+    const d = new Date(trim.length === 7 ? trim + '-01' : trim);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
+        year: 'numeric', month: 'short',
+      });
+    }
   }
+  // Already human-readable (Arabic month names, etc.) — return as-is
+  return trim;
 }
 
-// ─── Date range — "Jan 2023 – Mar 2024" ───────────────────────────────────────
-function dateRange(start: string, end: string, lang: Language): string {
-  const s = fmt(start, lang);
-  const e = fmt(end, lang);
-  const sep = lang === 'ar' ? ' – ' : ' – ';
-  return s && e ? `${s}${sep}${e}` : s || e;
+function range(s: string, e: string, lang: Language) {
+  const sf = fmt(s, lang);
+  const ef = fmt(e, lang);
+  if (sf && ef) return `${sf} – ${ef}`;
+  return sf || ef;
 }
 
-// ─── Skill category labels ─────────────────────────────────────────────────────
-const CAT_LABELS: Record<string, { ar: string; en: string }> = {
-  backend:      { ar: 'الواجهة الخلفية',   en: 'Backend'          },
-  frontend:     { ar: 'الواجهة الأمامية',  en: 'Frontend'         },
-  mobile:       { ar: 'الموبايل',          en: 'Mobile'           },
-  devops:       { ar: 'البنية التحتية',    en: 'DevOps & Infra'   },
-  architecture: { ar: 'معمارية الأنظمة',  en: 'Architecture'     },
+const CAT: Record<string, { ar: string; en: string }> = {
+  backend:      { ar: 'الخلفية',        en: 'Backend'       },
+  mobile:       { ar: 'الموبايل',       en: 'Mobile'        },
+  frontend:     { ar: 'الأمامية',       en: 'Frontend'      },
+  architecture: { ar: 'المعمارية',      en: 'Architecture'  },
+  devops:       { ar: 'DevOps',         en: 'DevOps'        },
 };
+const CAT_ORDER = ['backend', 'mobile', 'frontend', 'architecture', 'devops'];
 
-// ─── Shared style constants ────────────────────────────────────────────────────
-const FONT = "Arial, 'Helvetica Neue', 'Noto Sans Arabic', sans-serif";
-const COLOR_BLACK  = '#000000';
-const COLOR_DARK   = '#1a1a1a';
-const COLOR_MID    = '#444444';
-const COLOR_MUTED  = '#666666';
-const COLOR_RULE   = '#000000';
+// Shared colours
+const K  = '#000';
+const D  = '#1a1a1a';
+const M  = '#404040';
+const G  = '#666';
+const F  = "Arial,'Helvetica Neue','Noto Sans Arabic',sans-serif";
 
-// ─── Component ────────────────────────────────────────────────────────────────
-export default function ResumePrintView({
-  bio, projects, skills, certifications, experiences, language,
-}: ResumePrintViewProps) {
-  const isRTL = language === 'ar';
-  const name    = isRTL ? bio.nameAr    : bio.nameEn;
-  const title   = isRTL ? bio.titleAr   : bio.titleEn;
-  const summary = isRTL ? bio.descriptionAr : bio.descriptionEn;
+function H2({ label }: { label: string }) {
+  return (
+    <div style={{ borderBottom: '1.5pt solid #000', paddingBottom: '1pt', marginBottom: '3pt', marginTop: '7pt' }}>
+      <h2 style={{ margin: 0, fontSize: '8.5pt', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.09em', color: K, lineHeight: 1.2 }}>
+        {label}
+      </h2>
+    </div>
+  );
+}
 
-  // Reverse-chronological sort for experience
-  const sortedExp = [...experiences].sort((a, b) => {
-    const aDate = a.endDate.toLowerCase() === 'present' ? '9999' : a.endDate;
-    const bDate = b.endDate.toLowerCase() === 'present' ? '9999' : b.endDate;
-    return bDate.localeCompare(aDate);
+export default function ResumePrintView({ bio, projects, skills, certifications, experiences, language }: ResumePrintViewProps) {
+  const ar = language === 'ar';
+  const name    = ar ? bio.nameAr    : bio.nameEn;
+  const title   = ar ? bio.titleAr   : bio.titleEn;
+  const summary = ar ? bio.descriptionAr : bio.descriptionEn;
+
+  // Reverse-chronological: "Present" jobs first, then by endDate desc
+  const exps = [...experiences].sort((a, b) => {
+    const aE = a.endDate.toLowerCase().includes('present') || a.endDate.includes('الآن') ? '9999' : a.endDate;
+    const bE = b.endDate.toLowerCase().includes('present') || b.endDate.includes('الآن') ? '9999' : b.endDate;
+    return bE.localeCompare(aE);
   });
 
-  // Reverse-chronological sort for certs
-  const sortedCerts = [...certifications].sort((a, b) =>
-    b.date.localeCompare(a.date)
-  );
+  const certs = [...certifications].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Skill groups — ordered by importance for ATS
-  const CAT_ORDER = ['backend', 'mobile', 'frontend', 'architecture', 'devops'];
   const skillGroups = CAT_ORDER
-    .map(cat => ({
-      cat,
-      label: isRTL ? (CAT_LABELS[cat]?.ar ?? cat) : (CAT_LABELS[cat]?.en ?? cat),
-      items: skills.filter(s => s.category === cat).map(s => s.name),
-    }))
-    .filter(g => g.items.length > 0);
+    .map(c => ({ cat: c, label: ar ? CAT[c].ar : CAT[c].en, items: skills.filter(s => s.category === c).map(s => s.name) }))
+    .filter(g => g.items.length);
 
-  // Limit projects to top 3 (most impactful on one page)
-  const topProjects = projects.slice(0, 3);
+  const contactParts = [
+    bio.email,
+    bio.whatsapp,
+    bio.linkedin?.replace('https://www.','').replace('https://',''),
+    bio.github?.replace('https://www.','').replace('https://',''),
+  ].filter(Boolean);
 
-  // Page wrapper style
-  const pageStyle: React.CSSProperties = {
-    fontFamily: FONT,
-    fontSize: '9.5pt',
-    lineHeight: '1.42',
-    color: COLOR_DARK,
-    background: '#fff',
-    margin: 0,
-    padding: 0,
-    width: '210mm',
-  };
+  // Truncate long descriptions for single-page constraint
+  const trunc = (text: string, maxChars = 180) =>
+    text && text.length > maxChars ? text.slice(0, maxChars).trimEnd() + '…' : text;
 
-  const contentStyle: React.CSSProperties = {
-    padding: '13mm 16mm 12mm 16mm',
+  const page: React.CSSProperties = {
+    fontFamily: F, fontSize: '9pt', lineHeight: '1.38', color: D,
+    background: '#fff', width: '210mm', margin: 0, padding: 0,
   };
 
   return (
-    <div
-      className="hidden print:block"
-      dir={isRTL ? 'rtl' : 'ltr'}
-      style={pageStyle}
-    >
-      <div style={contentStyle}>
+    <div className="hidden print:block" dir={ar ? 'rtl' : 'ltr'} style={page}>
+      <div style={{ padding: '11mm 15mm 10mm 15mm' }}>
 
-        {/* ╔══════════════════════════════════════════════════════════╗
-            ║  HEADER                                                  ║
-            ╚══════════════════════════════════════════════════════════╝ */}
-        <div style={{ marginBottom: '9pt', borderBottom: `2pt solid ${COLOR_RULE}`, paddingBottom: '7pt' }}>
-
-          {/* Name */}
-          <h1 style={{
-            fontSize: '20pt',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            color: COLOR_BLACK,
-            margin: '0 0 2pt 0',
-            lineHeight: 1.1,
-          }}>
+        {/* ── HEADER ──────────────────────────────────── */}
+        <div style={{ borderBottom: '2pt solid #000', paddingBottom: '6pt', marginBottom: '0' }}>
+          <h1 style={{ margin: '0 0 1.5pt 0', fontSize: '19pt', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.035em', color: K, lineHeight: 1.1 }}>
             {name}
           </h1>
-
-          {/* Headline / Title — keyword-rich */}
-          <p style={{
-            fontSize: '10.5pt',
-            fontWeight: 600,
-            color: COLOR_MID,
-            margin: '0 0 6pt 0',
-            letterSpacing: '0.01em',
-          }}>
+          <p style={{ margin: '0 0 5pt 0', fontSize: '10pt', fontWeight: 600, color: M, letterSpacing: '0.01em' }}>
             {title}
           </p>
-
-          {/* Contact line — single row, no icons, plain text for ATS */}
-          <p style={{ fontSize: '8.5pt', color: COLOR_MUTED, margin: 0, lineHeight: '1.6' }}>
-            {[
-              bio.email,
-              bio.whatsapp,
-              bio.linkedin ? bio.linkedin.replace('https://www.', '').replace('https://', '') : null,
-              bio.github   ? bio.github.replace('https://www.', '').replace('https://', '')   : null,
-            ].filter(Boolean).join('   |   ')}
+          <p style={{ margin: 0, fontSize: '8pt', color: G, lineHeight: 1.5 }}>
+            {contactParts.join('   |   ')}
           </p>
         </div>
 
-        {/* ╔══════════════════════════════════════════════════════════╗
-            ║  PROFESSIONAL SUMMARY  — 2–3 lines max, ATS keywords   ║
-            ╚══════════════════════════════════════════════════════════╝ */}
+        {/* ── SUMMARY ─────────────────────────────────── */}
         {summary && (
-          <Section label={isRTL ? 'الملخص المهني' : 'PROFESSIONAL SUMMARY'}>
-            <p style={{ margin: 0, color: COLOR_MID, fontSize: '9.5pt', lineHeight: '1.5', textAlign: 'justify' }}>
-              {summary}
+          <>
+            <H2 label={ar ? 'الملخص المهني' : 'PROFESSIONAL SUMMARY'} />
+            <p style={{ margin: 0, fontSize: '9pt', color: M, lineHeight: '1.45', textAlign: 'justify' }}>
+              {trunc(summary, 300)}
             </p>
-          </Section>
+          </>
         )}
 
-        {/* ╔══════════════════════════════════════════════════════════╗
-            ║  PROFESSIONAL EXPERIENCE — reverse chronological        ║
-            ║  Dates: "MMM YYYY – MMM YYYY" or "MMM YYYY – Present"  ║
-            ╚══════════════════════════════════════════════════════════╝ */}
-        {sortedExp.length > 0 && (
-          <Section label={isRTL ? 'الخبرة المهنية' : 'PROFESSIONAL EXPERIENCE'}>
-            {sortedExp.map((exp, i) => (
-              <div key={exp.id} style={{ marginTop: i === 0 ? '4pt' : '7pt' }}>
-                {/* Role + Date row */}
+        {/* ── EXPERIENCE ──────────────────────────────── */}
+        {exps.length > 0 && (
+          <>
+            <H2 label={ar ? 'الخبرة المهنية' : 'PROFESSIONAL EXPERIENCE'} />
+            {exps.slice(0, 4).map((exp, i) => (
+              <div key={exp.id} style={{ marginTop: i === 0 ? '2pt' : '6pt' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                  <colgroup>
-                    <col style={{ width: '70%' }} />
-                    <col style={{ width: '30%' }} />
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style={{ verticalAlign: 'top', padding: 0 }}>
-                        <span style={{ fontWeight: 800, fontSize: '10pt', color: COLOR_BLACK }}>
-                          {isRTL ? exp.role.ar : exp.role.en}
-                        </span>
-                      </td>
-                      <td style={{
-                        verticalAlign: 'top',
-                        padding: 0,
-                        textAlign: isRTL ? 'left' : 'right',
-                        fontSize: '8.5pt',
-                        color: COLOR_MUTED,
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {dateRange(exp.startDate, exp.endDate, language)}
-                      </td>
-                    </tr>
-                  </tbody>
+                  <colgroup><col style={{ width: '68%' }} /><col style={{ width: '32%' }} /></colgroup>
+                  <tbody><tr>
+                    <td style={{ padding: 0, verticalAlign: 'top' }}>
+                      <strong style={{ fontSize: '9.5pt', color: K }}>{ar ? exp.role.ar : exp.role.en}</strong>
+                    </td>
+                    <td style={{ padding: 0, textAlign: ar ? 'left' : 'right', fontSize: '8pt', color: G, fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                      {range(exp.startDate, exp.endDate, language)}
+                    </td>
+                  </tr></tbody>
                 </table>
-                {/* Company */}
-                <p style={{ margin: '1pt 0 3pt 0', fontSize: '9pt', fontWeight: 600, color: COLOR_MID }}>
-                  {isRTL ? exp.company.ar : exp.company.en}
+                <p style={{ margin: '1pt 0 2pt', fontSize: '8.5pt', fontWeight: 600, color: M }}>
+                  {ar ? exp.company.ar : exp.company.en}
                 </p>
-                {/* Description */}
                 {(exp.description.ar || exp.description.en) && (
-                  <p style={{ margin: '0 0 2pt 0', fontSize: '9pt', color: COLOR_MID, lineHeight: '1.5' }}>
-                    {isRTL ? exp.description.ar : exp.description.en}
+                  <p style={{ margin: '0 0 2pt', fontSize: '8.5pt', color: M, lineHeight: '1.42' }}>
+                    {trunc(ar ? exp.description.ar : exp.description.en, 200)}
                   </p>
                 )}
-                {/* Tech — ATS parses inline keywords excellently */}
                 {exp.technologies.length > 0 && (
-                  <p style={{ margin: 0, fontSize: '8.5pt', color: COLOR_MUTED }}>
-                    <strong style={{ color: COLOR_DARK }}>
-                      {isRTL ? 'التقنيات: ' : 'Technologies: '}
-                    </strong>
+                  <p style={{ margin: 0, fontSize: '8pt', color: G }}>
+                    <strong style={{ color: D }}>{ar ? 'التقنيات: ' : 'Tech: '}</strong>
                     {exp.technologies.join(', ')}
                   </p>
                 )}
               </div>
             ))}
-          </Section>
+          </>
         )}
 
-        {/* ╔══════════════════════════════════════════════════════════╗
-            ║  TECHNICAL SKILLS — keyword-rich, grouped, ATS-ready   ║
-            ╚══════════════════════════════════════════════════════════╝ */}
+        {/* ── TECHNICAL SKILLS ────────────────────────── */}
         {skillGroups.length > 0 && (
-          <Section label={isRTL ? 'المهارات التقنية' : 'TECHNICAL SKILLS'}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '4pt' }}>
+          <>
+            <H2 label={ar ? 'المهارات التقنية' : 'TECHNICAL SKILLS'} />
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '2pt' }}>
               <tbody>
                 {skillGroups.map(g => (
                   <tr key={g.cat}>
-                    <td style={{
-                      fontWeight: 700,
-                      fontSize: '9pt',
-                      color: COLOR_BLACK,
-                      paddingBottom: '3pt',
-                      paddingInlineEnd: '10pt',
-                      width: isRTL ? 'auto' : '105pt',
-                      minWidth: '85pt',
-                      whiteSpace: 'nowrap',
-                      verticalAlign: 'top',
-                    }}>
+                    <td style={{ fontWeight: 700, fontSize: '8.5pt', color: K, paddingBottom: '2.5pt', paddingInlineEnd: '8pt', width: '85pt', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                       {g.label}:
                     </td>
-                    <td style={{
-                      fontSize: '9pt',
-                      color: COLOR_MID,
-                      paddingBottom: '3pt',
-                      verticalAlign: 'top',
-                    }}>
+                    <td style={{ fontSize: '8.5pt', color: M, paddingBottom: '2.5pt', verticalAlign: 'top' }}>
                       {g.items.join(', ')}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </Section>
+          </>
         )}
 
-        {/* ╔══════════════════════════════════════════════════════════╗
-            ║  KEY PROJECTS — top 3, keyword-dense descriptions      ║
-            ╚══════════════════════════════════════════════════════════╝ */}
-        {topProjects.length > 0 && (
-          <Section label={isRTL ? 'المشاريع البارزة' : 'KEY PROJECTS'}>
-            {topProjects.map((proj, i) => (
-              <div key={proj.id} style={{ marginTop: i === 0 ? '4pt' : '6pt' }}>
+        {/* ── KEY PROJECTS ─────────────────────────────── */}
+        {projects.length > 0 && (
+          <>
+            <H2 label={ar ? 'المشاريع البارزة' : 'KEY PROJECTS'} />
+            {projects.slice(0, 3).map((p, i) => (
+              <div key={p.id} style={{ marginTop: i === 0 ? '2pt' : '5pt' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                  <colgroup>
-                    <col style={{ width: '65%' }} />
-                    <col style={{ width: '35%' }} />
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: 0, verticalAlign: 'top' }}>
-                        <span style={{ fontWeight: 800, fontSize: '9.5pt', color: COLOR_BLACK }}>
-                          {isRTL ? proj.title.ar : proj.title.en}
-                        </span>
-                        {proj.status && (
-                          <span style={{ fontSize: '7.5pt', color: COLOR_MUTED, marginInlineStart: '6pt', fontWeight: 600 }}>
-                            [{proj.status === 'production' ? (isRTL ? 'إنتاج' : 'Production') :
-                               proj.status === 'completed' ? (isRTL ? 'مكتمل' : 'Completed') :
-                               (isRTL ? 'تطوير' : 'In Dev')}]
-                          </span>
-                        )}
-                      </td>
-                      <td style={{
-                        padding: 0,
-                        verticalAlign: 'top',
-                        textAlign: isRTL ? 'left' : 'right',
-                        fontSize: '8pt',
-                        color: COLOR_MUTED,
-                        fontWeight: 500,
-                      }}>
-                        {proj.demoUrl && proj.demoUrl.replace('https://', '')}
-                      </td>
-                    </tr>
-                  </tbody>
+                  <colgroup><col style={{ width: '65%' }} /><col style={{ width: '35%' }} /></colgroup>
+                  <tbody><tr>
+                    <td style={{ padding: 0, verticalAlign: 'top' }}>
+                      <strong style={{ fontSize: '9pt', color: K }}>{ar ? p.title.ar : p.title.en}</strong>
+                      <span style={{ fontSize: '7.5pt', color: G, marginInlineStart: '5pt', fontWeight: 600 }}>
+                        [{p.status === 'production' ? (ar ? 'إنتاج' : 'Production') : p.status === 'completed' ? (ar ? 'مكتمل' : 'Completed') : (ar ? 'تطوير' : 'Dev')}]
+                      </span>
+                    </td>
+                    <td style={{ padding: 0, textAlign: ar ? 'left' : 'right', fontSize: '7.5pt', color: G, verticalAlign: 'top' }}>
+                      {p.githubUrl?.replace('https://github.com/', 'github.com/')}
+                    </td>
+                  </tr></tbody>
                 </table>
-                <p style={{ margin: '2pt 0 1.5pt 0', fontSize: '9pt', color: COLOR_MID, lineHeight: '1.45' }}>
-                  {isRTL ? proj.description.ar : proj.description.en}
+                <p style={{ margin: '1.5pt 0 1pt', fontSize: '8.5pt', color: M, lineHeight: '1.4' }}>
+                  {trunc(ar ? p.description.ar : p.description.en, 160)}
                 </p>
-                <p style={{ margin: 0, fontSize: '8.5pt', color: COLOR_MUTED }}>
-                  <strong style={{ color: COLOR_DARK }}>
-                    {isRTL ? 'المكدس: ' : 'Stack: '}
-                  </strong>
-                  {proj.techStack.join(' · ')}
+                <p style={{ margin: 0, fontSize: '8pt', color: G }}>
+                  <strong style={{ color: D }}>{ar ? 'المكدس: ' : 'Stack: '}</strong>
+                  {p.techStack.join(' · ')}
                 </p>
               </div>
             ))}
-          </Section>
+          </>
         )}
 
-        {/* ╔══════════════════════════════════════════════════════════╗
-            ║  CERTIFICATIONS — reverse chronological, compact        ║
-            ╚══════════════════════════════════════════════════════════╝ */}
-        {sortedCerts.length > 0 && (
-          <Section label={isRTL ? 'الشهادات المهنية' : 'CERTIFICATIONS'}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '4pt' }}>
+        {/* ── CERTIFICATIONS ───────────────────────────── */}
+        {certs.length > 0 && (
+          <>
+            <H2 label={ar ? 'الشهادات المهنية' : 'CERTIFICATIONS'} />
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '2pt' }}>
               <tbody>
-                {sortedCerts.map(cert => (
-                  <tr key={cert.id} style={{ verticalAlign: 'top' }}>
-                    {/* Cert name + issuer */}
-                    <td style={{ paddingBottom: '4pt', paddingInlineEnd: '10pt', verticalAlign: 'top' }}>
-                      <span style={{ fontWeight: 700, fontSize: '9pt', color: COLOR_BLACK }}>
-                        {isRTL ? cert.title.ar : cert.title.en}
-                      </span>
-                      <span style={{ fontSize: '8.5pt', color: COLOR_MUTED, marginInlineStart: '6pt' }}>
-                        — {cert.issuer}
-                        {cert.credentialId ? ` · ${cert.credentialId}` : ''}
+                {certs.map(c => (
+                  <tr key={c.id} style={{ verticalAlign: 'top' }}>
+                    <td style={{ paddingBottom: '3pt', paddingInlineEnd: '8pt', verticalAlign: 'top' }}>
+                      <strong style={{ fontSize: '8.5pt', color: K }}>{ar ? c.title.ar : c.title.en}</strong>
+                      <span style={{ fontSize: '8pt', color: G, marginInlineStart: '5pt' }}>
+                        — {c.issuer}{c.credentialId ? ` · ${c.credentialId}` : ''}
                       </span>
                     </td>
-                    {/* Date — right-aligned */}
-                    <td style={{
-                      paddingBottom: '4pt',
-                      textAlign: isRTL ? 'left' : 'right',
-                      whiteSpace: 'nowrap',
-                      fontSize: '8.5pt',
-                      color: COLOR_MUTED,
-                      fontWeight: 600,
-                      verticalAlign: 'top',
-                      width: '70pt',
-                    }}>
-                      {fmt(cert.date, language)}
+                    <td style={{ paddingBottom: '3pt', textAlign: ar ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: '8pt', color: G, fontWeight: 600, width: '65pt', verticalAlign: 'top' }}>
+                      {fmt(c.date, language)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </Section>
+          </>
         )}
 
       </div>
-    </div>
-  );
-}
-
-// ─── Section wrapper with bold uppercase heading + rule ───────────────────────
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: '8pt' }}>
-      {/* Section heading — ATS loves uppercase plain-text headings */}
-      <div style={{
-        borderBottom: '1.2pt solid #000',
-        marginBottom: '3pt',
-        paddingBottom: '1.5pt',
-      }}>
-        <h2 style={{
-          fontSize: '9pt',
-          fontWeight: 900,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          color: '#000',
-          margin: 0,
-          lineHeight: 1.3,
-        }}>
-          {label}
-        </h2>
-      </div>
-      {children}
     </div>
   );
 }
