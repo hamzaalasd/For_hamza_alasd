@@ -131,7 +131,16 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
                 {exp.technologies.length > 0 && (
                   <p style={{ margin: 0, fontSize: '8pt', color: G }}>
                     <strong style={{ color: D }}>{ar ? 'التقنيات: ' : 'Tech: '}</strong>
-                    {exp.technologies.join(', ')}
+                    {exp.technologies.map(t => {
+                      if (ar) return t;
+                      // English translation mapping for local systems
+                      const dict: Record<string, string> = {
+                        'اوتكس برو': 'Onyx Pro',
+                        'متكامل': 'Motakamel ERP',
+                        'يمن سوفت': 'Yemen Soft'
+                      };
+                      return dict[t] || t;
+                    }).join(', ')}
                   </p>
                 )}
               </div>
@@ -203,7 +212,7 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
                     <td style={{ paddingBottom: '3pt', paddingInlineEnd: '8pt', verticalAlign: 'top' }}>
                       <strong style={{ fontSize: '8.5pt', color: K }}>{ar ? c.title.ar : c.title.en}</strong>
                       <span style={{ fontSize: '8pt', color: G, marginInlineStart: '5pt' }}>
-                        — {c.issuer}{c.credentialId ? ` · ${c.credentialId}` : ''}
+                        — {typeof c.issuer === 'string' ? c.issuer : c.issuer[language]}{c.credentialId ? ` · ${c.credentialId}` : ''}
                       </span>
                     </td>
                     <td style={{ paddingBottom: '3pt', textAlign: ar ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: '8pt', color: G, fontWeight: 600, width: '65pt', verticalAlign: 'top' }} dir="ltr">

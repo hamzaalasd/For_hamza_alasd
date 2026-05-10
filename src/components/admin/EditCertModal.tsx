@@ -13,7 +13,7 @@ interface EditCertModalProps {
 
 const emptyCert: Certification = {
   id: '',
-  issuer: '',
+  issuer: { ar: '', en: '' },
   title: { ar: '', en: '' },
   date: new Date().toISOString().split('T')[0],
   verifyUrl: 'https://',
@@ -89,13 +89,29 @@ export default function EditCertModal({ cert, onClose, mode }: EditCertModalProp
             {/* Body */}
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Issuer (الجهة)">
+                <Field label="Issuer (الجهة - عربي)">
                   <Input
-                    value={form.issuer}
-                    onChange={(v: string) => setForm(f => ({ ...f, issuer: v }))}
+                    value={typeof form.issuer === 'string' ? form.issuer : (form.issuer?.ar || '')}
+                    onChange={(v: string) => setForm(f => ({
+                      ...f,
+                      issuer: typeof f.issuer === 'string' ? { ar: v, en: f.issuer } : { ...f.issuer, ar: v }
+                    }))}
+                    placeholder="الجهة المانحة"
+                  />
+                </Field>
+                <Field label="Issuer (English)">
+                  <Input
+                    value={typeof form.issuer === 'string' ? form.issuer : (form.issuer?.en || '')}
+                    onChange={(v: string) => setForm(f => ({
+                      ...f,
+                      issuer: typeof f.issuer === 'string' ? { ar: f.issuer, en: v } : { ...f.issuer, en: v }
+                    }))}
                     placeholder="e.g. Udemy"
                   />
                 </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <Field label="Tech">
                   <select
                     value={form.tech}

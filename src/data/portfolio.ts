@@ -28,7 +28,7 @@ export interface Skill {
 
 export interface Certification {
   id: string;
-  issuer: string;
+  issuer: string | { ar: string; en: string };
   title: { ar: string; en: string };
   date: string;
   verifyUrl: string;

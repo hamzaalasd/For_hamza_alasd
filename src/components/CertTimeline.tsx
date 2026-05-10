@@ -83,7 +83,9 @@ function CertPreviewModal({ cert, language, onClose }: { cert: Certification; la
                         <p className="text-white font-bold text-sm leading-tight line-clamp-2">
                           {cert.title[language]}
                         </p>
-                        <p className="text-white/60 font-mono text-xs">{cert.issuer}</p>
+                        <p className="text-white/60 font-mono text-xs">
+                          {typeof cert.issuer === 'string' ? cert.issuer : cert.issuer[language]}
+                        </p>
                       </div>
                       <div className="shrink-0 flex flex-col items-end gap-1.5">
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-system-accent/90 backdrop-blur rounded-full">
@@ -118,9 +120,8 @@ function CertPreviewModal({ cert, language, onClose }: { cert: Certification; la
                     </div>
                   </div>
 
-                  {/* Issuer */}
                   <div className="font-mono text-sm text-system-accent uppercase tracking-widest">
-                    {cert.issuer}
+                    {typeof cert.issuer === 'string' ? cert.issuer : cert.issuer[language]}
                   </div>
 
                   {/* Divider */}
@@ -264,7 +265,9 @@ export default function CertTimeline({ certifications, language, isAdmin, onEdit
                     <h3 className="text-lg font-bold group-hover:text-system-accent transition-colors duration-300">
                       {cert.title[language]}
                     </h3>
-                    <p className="text-system-muted text-sm font-mono">{cert.issuer}</p>
+                    <p className="text-system-muted text-sm font-mono">
+                      {typeof cert.issuer === 'string' ? cert.issuer : cert.issuer[language]}
+                    </p>
                   </div>
 
                    {/* Action Buttons */}
