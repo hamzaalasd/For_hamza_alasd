@@ -5,8 +5,6 @@ import {
   Upload, X, Loader2, CheckCircle2, AlertCircle,
   ImagePlus, Trash2, ZoomIn, Award, ShieldCheck
 } from 'lucide-react';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from '../../lib/firebase';
 
 interface CertImageUploaderProps {
   certId: string;
@@ -14,70 +12,77 @@ interface CertImageUploaderProps {
   onChange: (url: string | undefined) => void;
 }
 
-type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
+type UploadStatus = 'idle' | 'processing' | 'done' | 'error';
 
 export default function CertImageUploader({ certId, imageUrl, onChange }: CertImageUploaderProps) {
   const [status, setStatus] = useState<UploadStatus>('idle');
-  const [progress, setProgress] = useState(0);
-  const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const currentImage = preview || imageUrl;
-
-  const uploadFile = useCallback(async (file: File) => {
+  const processFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
       setError('الملف يجب أن يكون صورة (PNG، JPG، WEBP)');
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('حجم الصورة يجب أن لا يتجاوز 10MB');
-      return;
-    }
-
+    
     setError(null);
-    setStatus('uploading');
-    setProgress(0);
+    setStatus('processing');
 
-    const localPreview = URL.createObjectURL(file);
-    setPreview(localPreview);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // Increase max size slightly for certificates to retain text readability
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
 
-    const ext = file.name.split('.').pop() || 'jpg';
-    const filename = `${Date.now()}.${ext}`;
-    const path = `certifications/${certId}/${filename}`;
-    const sRef = storageRef(storage, path);
-    const task = uploadBytesResumable(sRef, file);
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
 
-    task.on(
-      'state_changed',
-      (snap) => {
-        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-        setProgress(pct);
-      },
-      (err) => {
-        setStatus('error');
-        setError(err.message);
-        URL.revokeObjectURL(localPreview);
-        setPreview(null);
-      },
-      async () => {
-        const url = await getDownloadURL(task.snapshot.ref);
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+        }
+        
+        // High quality JPEG compression
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        onChange(dataUrl);
         setStatus('done');
-        setProgress(100);
-        onChange(url);
-        // Keep preview alive - it'll be replaced by imageUrl on next render
-        setTimeout(() => {
-          URL.revokeObjectURL(localPreview);
-          setPreview(null);
-        }, 500);
-      }
-    );
-  }, [certId, onChange]);
+      };
+      img.onerror = () => {
+        setStatus('error');
+        setError('فشل في قراءة الصورة');
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      setStatus('error');
+      setError('حدث خطأ أثناء قراءة الملف');
+    };
+    reader.readAsDataURL(file);
+  }, [onChange]);
 
   const handleFiles = (files: FileList | null) => {
-    if (files && files[0]) uploadFile(files[0]);
+    if (files && files[0]) processFile(files[0]);
   };
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -86,26 +91,13 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
     handleFiles(e.dataTransfer.files);
   };
 
-  const removeImage = async () => {
-    if (!imageUrl) { onChange(undefined); return; }
-    try {
-      const urlObj = new URL(imageUrl);
-      const pathEncoded = urlObj.pathname.split('/o/')[1]?.split('?')[0];
-      if (pathEncoded) {
-        const path = decodeURIComponent(pathEncoded);
-        const sRef = storageRef(storage, path);
-        await deleteObject(sRef);
-      }
-    } catch { /* ignore */ }
-    setPreview(null);
-    setStatus('idle');
-    setProgress(0);
+  const removeImage = () => {
     onChange(undefined);
+    setStatus('idle');
   };
 
   return (
     <div className="space-y-3">
-      {/* Section Label */}
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 text-xs font-mono text-system-accent uppercase tracking-wider">
           <ImagePlus size={13} />
@@ -114,10 +106,8 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
         <div className="h-px flex-1 bg-system-border" />
       </div>
 
-      {/* Main Area */}
       <AnimatePresence mode="wait">
-        {currentImage ? (
-          /* ── Preview State ── */
+        {imageUrl ? (
           <motion.div
             key="preview"
             initial={{ opacity: 0, scale: 0.96 }}
@@ -126,9 +116,8 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
             className="relative group rounded-xl overflow-hidden border border-system-border bg-system-card"
             style={{ aspectRatio: '16/9' }}
           >
-            {/* Certificate Image */}
             <img
-              src={currentImage}
+              src={imageUrl}
               alt="صورة الشهادة"
               className="w-full h-full object-contain bg-system-bg"
             />
@@ -139,24 +128,13 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
             <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-system-accent/50 rounded-bl-xl pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-system-accent/50 rounded-br-xl pointer-events-none" />
 
-            {/* Upload Progress Overlay (while uploading) */}
-            {status === 'uploading' && (
+            {status === 'processing' && (
               <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
                 <Loader2 size={28} className="text-system-accent animate-spin" />
-                <div className="w-48 space-y-1.5 text-center">
-                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-system-accent rounded-full"
-                      animate={{ width: `${progress}%` }}
-                      transition={{ ease: 'easeOut' }}
-                    />
-                  </div>
-                  <p className="text-xs font-mono text-system-accent">{progress}% جاري الرفع...</p>
-                </div>
+                <p className="text-xs font-mono text-system-accent">جاري المعالجة...</p>
               </div>
             )}
 
-            {/* Done Badge */}
             {status === 'done' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -169,53 +147,40 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
               </motion.div>
             )}
 
-            {/* Verified badge (when imageUrl exists & not uploading) */}
-            {imageUrl && status !== 'uploading' && (
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-system-accent/90 backdrop-blur rounded-full">
-                <ShieldCheck size={11} className="text-black" />
-                <span className="text-[10px] font-bold font-mono text-black uppercase tracking-wider">شهادة</span>
+            {status !== 'processing' && (
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-250 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsZoomed(true)}
+                  className="p-2.5 bg-white/10 backdrop-blur border border-white/20 text-white rounded-xl hover:bg-white/20 transition-colors"
+                  title="تكبير"
+                >
+                  <ZoomIn size={16} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => inputRef.current?.click()}
+                  className="p-2.5 bg-system-accent/80 backdrop-blur border border-system-accent/40 text-black rounded-xl hover:bg-system-accent transition-colors"
+                  title="تغيير الصورة"
+                >
+                  <Upload size={16} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={removeImage}
+                  className="p-2.5 bg-red-500/80 backdrop-blur border border-red-400/30 text-white rounded-xl hover:bg-red-500 transition-colors"
+                  title="حذف الصورة"
+                >
+                  <Trash2 size={16} />
+                </motion.button>
               </div>
             )}
-
-            {/* Hover Actions */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-250 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-              {/* Zoom */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsZoomed(true)}
-                className="p-2.5 bg-white/10 backdrop-blur border border-white/20 text-white rounded-xl hover:bg-white/20 transition-colors"
-                title="تكبير"
-              >
-                <ZoomIn size={16} />
-              </motion.button>
-              {/* Replace */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => inputRef.current?.click()}
-                className="p-2.5 bg-system-accent/80 backdrop-blur border border-system-accent/40 text-black rounded-xl hover:bg-system-accent transition-colors"
-                title="تغيير الصورة"
-              >
-                <Upload size={16} />
-              </motion.button>
-              {/* Delete */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={removeImage}
-                className="p-2.5 bg-red-500/80 backdrop-blur border border-red-400/30 text-white rounded-xl hover:bg-red-500 transition-colors"
-                title="حذف الصورة"
-              >
-                <Trash2 size={16} />
-              </motion.button>
-            </div>
-
             <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFiles(e.target.files)} />
           </motion.div>
-
         ) : (
-          /* ── Drop Zone ── */
           <motion.div
             key="dropzone"
             initial={{ opacity: 0, scale: 0.96 }}
@@ -255,29 +220,38 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
                     : 'bg-system-border border-system-border'
                 }`}
               >
-                <Award size={28} className={`transition-colors ${dragOver ? 'text-system-accent' : 'text-system-muted'}`} />
+                {status === 'processing' ? (
+                  <Loader2 size={28} className="text-system-accent animate-spin" />
+                ) : (
+                  <Award size={28} className={`transition-colors ${dragOver ? 'text-system-accent' : 'text-system-muted'}`} />
+                )}
               </motion.div>
 
               <div className="text-center space-y-1.5">
                 <p className={`text-sm font-mono font-medium transition-colors ${dragOver ? 'text-system-accent' : 'text-system-text'}`}>
-                  {dragOver ? '✦ أفلت صورة الشهادة هنا' : 'ارفع صورة الشهادة'}
+                  {status === 'processing' ? 'جاري المعالجة والرفع...' : (dragOver ? '✦ أفلت صورة الشهادة هنا' : 'ارفع صورة الشهادة أو استخدم الرابط')}
                 </p>
                 <p className="text-xs font-mono text-system-muted">
                   اسحب وأفلت أو اضغط للاختيار
                 </p>
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  {['PNG', 'JPG', 'WEBP'].map(fmt => (
-                    <span key={fmt} className="px-2 py-0.5 bg-system-border text-system-muted text-[10px] font-mono rounded uppercase">{fmt}</span>
-                  ))}
-                  <span className="text-system-muted/50 text-[10px] font-mono">• حد 10MB</span>
-                </div>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Input Link Fallback/Option */}
+      {!imageUrl && (
+        <div className="pt-2">
+          <input
+            value={imageUrl || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="أو ضِف رابط الصورة هنا (https://...)"
+            className="w-full px-3 py-2 text-xs bg-system-bg border border-system-border rounded-lg text-system-text placeholder:text-system-muted/40 outline-none focus:border-system-accent transition-colors"
+          />
+        </div>
+      )}
 
-      {/* Error Message */}
       <AnimatePresence>
         {error && (
           <motion.div
@@ -295,9 +269,8 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
         )}
       </AnimatePresence>
 
-      {/* Zoom Modal */}
       <AnimatePresence>
-        {isZoomed && currentImage && (
+        {isZoomed && imageUrl && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -314,7 +287,6 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
               className="relative z-10 max-w-4xl w-full"
               onClick={e => e.stopPropagation()}
             >
-              {/* Top bar */}
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2 text-xs font-mono text-system-muted">
                   <div className="w-2 h-2 rounded-full bg-system-accent animate-pulse" />
@@ -327,17 +299,9 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
                   <X size={16} />
                 </button>
               </div>
-              {/* Frame */}
               <div className="relative rounded-2xl overflow-hidden border border-system-accent/30 shadow-2xl shadow-system-accent/20">
-                <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-system-accent/50 rounded-tl-2xl z-10" />
-                <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-system-accent/50 rounded-tr-2xl z-10" />
-                <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-system-accent/50 rounded-bl-2xl z-10" />
-                <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-system-accent/50 rounded-br-2xl z-10" />
-                <img src={currentImage} alt="الشهادة" className="w-full object-contain max-h-[70vh] bg-system-bg" />
+                <img src={imageUrl} alt="الشهادة" className="w-full object-contain max-h-[70vh] bg-system-bg" />
               </div>
-              <p className="text-center text-xs font-mono text-system-muted mt-3 opacity-60">
-                اضغط خارج الصورة للإغلاق
-              </p>
             </motion.div>
           </motion.div>
         )}
