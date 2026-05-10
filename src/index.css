@@ -5,12 +5,12 @@
   --font-sans: "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-system-bg: #0a0a0a;
-  --color-system-card: #151619;
-  --color-system-border: #2a2a2a;
-  --color-system-accent: #00ff00;
-  --color-system-text: #e4e4e7;
-  --color-system-muted: #71717a;
+  --color-system-bg: #080808;
+  --color-system-card: #111214;
+  --color-system-border: #252528;
+  --color-system-accent: #00ff88;
+  --color-system-text: #ffffff;
+  --color-system-muted: #9ca3af;
 }
 
 @layer base {
@@ -58,9 +58,10 @@
 @media print {
   /* Hide standard dark UI and grid */
   body {
-    background: none !important;
-    background-color: white !important;
+    background: white !important;
+    background-image: none !important;
     color: black !important;
+    font-size: 10.5pt;
   }
   
   /* Hide the main app wrapper */
@@ -68,14 +69,22 @@
     display: none !important;
   }
 
-  /* Just make sure print wrapper breaks pages cleanly */
+  /* Guarantee ATS-friendly print */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
   
   @page {
-    margin: 15mm;
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  /* Avoid page breaks inside key blocks */
+  section, tr, div {
+    page-break-inside: avoid;
   }
 }
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Save } from 'lucide-react';
 import { Certification } from '../../data/portfolio';
 import { useAdmin } from '../../context/AdminContext';
+import CertImageUploader from './CertImageUploader';
 
 interface EditCertModalProps {
   cert?: Certification;
@@ -69,7 +70,7 @@ export default function EditCertModal({ cert, onClose, mode }: EditCertModalProp
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
-          className="relative z-10 w-full max-w-lg"
+          className="relative z-10 w-full max-w-xl"
           onClick={e => e.stopPropagation()}
         >
           <div className="rounded-2xl border border-system-border bg-system-card overflow-hidden">
@@ -147,6 +148,15 @@ export default function EditCertModal({ cert, onClose, mode }: EditCertModalProp
                   placeholder="https://www.udemy.com/certificate/..."
                 />
               </Field>
+
+              {/* Certificate Image Upload */}
+              <div className="pt-1">
+                <CertImageUploader
+                  certId={form.id}
+                  imageUrl={form.imageUrl}
+                  onChange={(url) => setForm(f => ({ ...f, imageUrl: url }))}
+                />
+              </div>
             </div>
 
             {/* Footer */}

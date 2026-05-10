@@ -55,80 +55,124 @@ function CertPreviewModal({ cert, language, onClose }: { cert: Certification; la
 
             {/* Certificate Body */}
             <div className="p-8 space-y-6">
-              {/* Certificate Design */}
-              <div className="relative rounded-xl border border-system-accent/20 bg-gradient-to-br from-system-bg via-system-card to-system-bg p-8 text-center space-y-4 overflow-hidden">
-                {/* Corner decorations */}
-                <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-system-accent/40 rounded-tl-xl" />
-                <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-system-accent/40 rounded-tr-xl" />
-                <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-system-accent/40 rounded-bl-xl" />
-                <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-system-accent/40 rounded-br-xl" />
+              {cert.imageUrl ? (
+                /* ── Real Certificate Photo ── */
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="relative rounded-xl overflow-hidden border border-system-accent/20 bg-system-bg shadow-lg shadow-system-accent/5"
+                >
+                  {/* Corner decorations */}
+                  <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-system-accent/50 rounded-tl-xl z-10" />
+                  <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 border-system-accent/50 rounded-tr-xl z-10" />
+                  <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 border-system-accent/50 rounded-bl-xl z-10" />
+                  <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-system-accent/50 rounded-br-xl z-10" />
 
-                {/* Watermark Pattern */}
-                <div className="absolute inset-0 opacity-[0.03] select-none pointer-events-none flex items-center justify-center">
-                  <span className="text-[120px] font-mono font-black text-system-accent rotate-[-30deg]">CERT</span>
-                </div>
+                  {/* The Image */}
+                  <img
+                    src={cert.imageUrl}
+                    alt={cert.title[language]}
+                    className="w-full object-contain max-h-[420px] bg-system-bg"
+                  />
 
-                {/* Icon */}
-                <div className="flex justify-center">
-                  <div className="p-4 rounded-full bg-system-accent/10 border border-system-accent/30">
-                    <Award size={40} className="text-system-accent" />
-                  </div>
-                </div>
-
-                {/* Issuer */}
-                <div className="font-mono text-sm text-system-accent uppercase tracking-widest">
-                  {cert.issuer}
-                </div>
-
-                {/* Divider */}
-                <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-system-accent/20" />
-                  <span className="text-system-accent/40 font-mono text-xs">✦</span>
-                  <div className="h-px flex-1 bg-system-accent/20" />
-                </div>
-
-                {/* Title */}
-                <h2 className="text-2xl font-bold text-system-text leading-tight">
-                  {cert.title[language]}
-                </h2>
-
-                {/* Recipient */}
-                <p className="text-system-muted text-sm font-mono">
-                  {language === 'ar' ? 'ممنوح إلى: حمزة محمد' : 'Awarded to: Hamza Mohamed'}
-                </p>
-
-                {/* Tech Badge */}
-                <div className="flex justify-center">
-                  <span className="px-4 py-1.5 bg-system-accent/10 text-system-accent text-xs font-mono rounded-full border border-system-accent/30 uppercase tracking-wider">
-                    {cert.tech}
-                  </span>
-                </div>
-
-                {/* Date + Credential ID */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 text-xs font-mono text-system-muted">
-                  <div className="flex items-center gap-1.5">
-                    <span className="opacity-60">{language === 'ar' ? 'تاريخ الإصدار:' : 'Issue Date:'}</span>
-                    <span className="text-system-text">{cert.date}</span>
-                  </div>
-                  {cert.credentialId && (
-                    <>
-                      <span className="hidden sm:block opacity-30">|</span>
-                      <div className="flex items-center gap-1.5">
-                        <Hash size={11} className="opacity-60" />
-                        <span className="text-system-text">{cert.credentialId}</span>
+                  {/* Overlay Info Strip */}
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 py-4 z-10">
+                    <div className="flex items-end justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <p className="text-white font-bold text-sm leading-tight line-clamp-2">
+                          {cert.title[language]}
+                        </p>
+                        <p className="text-white/60 font-mono text-xs">{cert.issuer}</p>
                       </div>
-                    </>
-                  )}
-                </div>
+                      <div className="shrink-0 flex flex-col items-end gap-1.5">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-system-accent/90 backdrop-blur rounded-full">
+                          <CheckCircle2 size={10} className="text-black" />
+                          <span className="text-[10px] font-bold font-mono text-black uppercase tracking-wider">
+                            {language === 'ar' ? 'موثقة' : 'Verified'}
+                          </span>
+                        </div>
+                        <span className="text-white/50 font-mono text-[10px]">{cert.date}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                /* ── Designed Fallback Card ── */
+                <div className="relative rounded-xl border border-system-accent/20 bg-gradient-to-br from-system-bg via-system-card to-system-bg p-8 text-center space-y-4 overflow-hidden">
+                  {/* Corner decorations */}
+                  <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-system-accent/40 rounded-tl-xl" />
+                  <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-system-accent/40 rounded-tr-xl" />
+                  <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-system-accent/40 rounded-bl-xl" />
+                  <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-system-accent/40 rounded-br-xl" />
 
-                {/* Checkmark */}
-                <div className="flex items-center justify-center gap-2 text-system-accent">
-                  <CheckCircle2 size={16} />
-                  <span className="text-xs font-mono uppercase tracking-wider">
-                    {language === 'ar' ? 'شهادة موثقة' : 'Verified Certificate'}
-                  </span>
+                  {/* Watermark Pattern */}
+                  <div className="absolute inset-0 opacity-[0.03] select-none pointer-events-none flex items-center justify-center">
+                    <span className="text-[120px] font-mono font-black text-system-accent rotate-[-30deg]">CERT</span>
+                  </div>
+
+                  {/* Icon */}
+                  <div className="flex justify-center">
+                    <div className="p-4 rounded-full bg-system-accent/10 border border-system-accent/30">
+                      <Award size={40} className="text-system-accent" />
+                    </div>
+                  </div>
+
+                  {/* Issuer */}
+                  <div className="font-mono text-sm text-system-accent uppercase tracking-widest">
+                    {cert.issuer}
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-system-accent/20" />
+                    <span className="text-system-accent/40 font-mono text-xs">✦</span>
+                    <div className="h-px flex-1 bg-system-accent/20" />
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-2xl font-bold text-system-text leading-tight">
+                    {cert.title[language]}
+                  </h2>
+
+                  {/* Recipient */}
+                  <p className="text-system-muted text-sm font-mono">
+                    {language === 'ar' ? 'ممنوح إلى: حمزة محمد' : 'Awarded to: Hamza Mohamed'}
+                  </p>
+
+                  {/* Tech Badge */}
+                  <div className="flex justify-center">
+                    <span className="px-4 py-1.5 bg-system-accent/10 text-system-accent text-xs font-mono rounded-full border border-system-accent/30 uppercase tracking-wider">
+                      {cert.tech}
+                    </span>
+                  </div>
+
+                  {/* Date + Credential ID */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 text-xs font-mono text-system-muted">
+                    <div className="flex items-center gap-1.5">
+                      <span className="opacity-60">{language === 'ar' ? 'تاريخ الإصدار:' : 'Issue Date:'}</span>
+                      <span className="text-system-text">{cert.date}</span>
+                    </div>
+                    {cert.credentialId && (
+                      <>
+                        <span className="hidden sm:block opacity-30">|</span>
+                        <div className="flex items-center gap-1.5">
+                          <Hash size={11} className="opacity-60" />
+                          <span className="text-system-text">{cert.credentialId}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Checkmark */}
+                  <div className="flex items-center justify-center gap-2 text-system-accent">
+                    <CheckCircle2 size={16} />
+                    <span className="text-xs font-mono uppercase tracking-wider">
+                      {language === 'ar' ? 'شهادة موثقة' : 'Verified Certificate'}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -266,6 +310,43 @@ export default function CertTimeline({ certifications, language, isAdmin, onEdit
                     )}
                   </div>
                 </div>
+
+                {/* Certificate Image Thumbnail */}
+                {cert.imageUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="mt-4 pt-4 border-t border-system-border"
+                  >
+                    <button
+                      onClick={() => setPreviewCert(cert)}
+                      className="relative w-full rounded-lg overflow-hidden group/thumb border border-system-border hover:border-system-accent/40 transition-colors duration-200"
+                      style={{ aspectRatio: '16/5' }}
+                      title={language === 'ar' ? 'انقر للمعاينة الكاملة' : 'Click to preview'}
+                    >
+                      <img
+                        src={cert.imageUrl}
+                        alt={cert.title[language]}
+                        className="w-full h-full object-cover object-top"
+                      />
+                      {/* Dim overlay on hover */}
+                      <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-all duration-200 flex items-center justify-center">
+                        <div className="opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-200 flex items-center gap-1.5 px-3 py-1.5 bg-system-accent/90 backdrop-blur rounded-full">
+                          <Eye size={12} className="text-black" />
+                          <span className="text-[11px] font-bold font-mono text-black">
+                            {language === 'ar' ? 'عرض الشهادة' : 'View Certificate'}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Corner accents */}
+                      <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-system-accent/50 rounded-tl-lg z-10" />
+                      <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-system-accent/50 rounded-tr-lg z-10" />
+                      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-system-accent/50 rounded-bl-lg z-10" />
+                      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-system-accent/50 rounded-br-lg z-10" />
+                    </button>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           ))}
