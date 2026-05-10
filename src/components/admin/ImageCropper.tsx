@@ -26,6 +26,17 @@ function getRadianAngle(degreeValue: number) {
   return (degreeValue * Math.PI) / 180;
 }
 
+function rotateSize(width: number, height: number, rotation: number) {
+  const rotRad = getRadianAngle(rotation);
+
+  return {
+    width:
+      Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height:
+      Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+  };
+}
+
 export async function getCroppedImg(
   imageSrc: string,
   pixelCrop: Area,
@@ -37,34 +48,47 @@ export async function getCroppedImg(
 
   if (!ctx) return '';
 
-  const maxSize = Math.max(image.width, image.height);
-  const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
+  const { width: bWidth, height: bHeight } = rotateSize(
+    image.width,
+    image.height,
+    rotation
+  );
 
-  canvas.width = safeArea;
-  canvas.height = safeArea;
+  // set canvas size to the bounding box of the rotated image
+  canvas.width = bWidth;
+  canvas.height = bHeight;
 
-  ctx.translate(safeArea / 2, safeArea / 2);
+  // translate canvas context to a central point and rotate it
+  ctx.translate(bWidth / 2, bHeight / 2);
   ctx.rotate(getRadianAngle(rotation));
-  ctx.translate(-safeArea / 2, -safeArea / 2);
+  ctx.translate(-image.width / 2, -image.height / 2);
 
-  ctx.drawImage(
-    image,
-    safeArea / 2 - image.width / 2,
-    safeArea / 2 - image.height / 2
+  // draw rotated image
+  ctx.drawImage(image, 0, 0);
+
+  // Create final cropped canvas
+  const croppedCanvas = document.createElement('canvas');
+  const croppedCtx = croppedCanvas.getContext('2d');
+
+  if (!croppedCtx) return '';
+
+  croppedCanvas.width = pixelCrop.width;
+  croppedCanvas.height = pixelCrop.height;
+
+  // Draw the section of the rotated image from the first canvas onto the final canvas
+  croppedCtx.drawImage(
+    canvas,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
   );
 
-  const data = ctx.getImageData(0, 0, safeArea, safeArea);
-
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-
-  ctx.putImageData(
-    data,
-    Math.round(0 - safeArea / 2 + image.width / 2 - pixelCrop.x),
-    Math.round(0 - safeArea / 2 + image.height / 2 - pixelCrop.y)
-  );
-
-  return canvas.toDataURL('image/jpeg', 0.9);
+  return croppedCanvas.toDataURL('image/jpeg', 0.95);
 }
 
 export default function ImageCropper({ imageSrc, onClose, onCropComplete }: ImageCropperProps) {
