@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Save, Plus, Minus } from 'lucide-react';
+import { X, Save, Plus, Minus, Loader2 } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
 import { BioData, useAdmin } from '../../context/AdminContext';
 
 interface EditBioModalProps {
@@ -36,8 +38,9 @@ const Textarea = ({ value, onChange, placeholder }: any) => (
 
 export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
   const { updateBio } = useAdmin();
-  const [form, setForm] = useState<BioData>(JSON.parse(JSON.stringify(bio)));
+  const [form, setForm] = useState<BioData>(bio);
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,7 +81,26 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
         
         // Increase quality to 0.92 for much sharper retina display output
         const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        setForm(f => ({ ...f, avatarUrl: dataUrl }));
+        
+        try {
+          setUploading(true);
+          // 1. Convert to blob
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          
+          // 2. Upload to Storage
+          const storageRef = ref(storage, `avatars/profile-${Date.now()}.jpg`);
+          await uploadBytes(storageRef, blob);
+          
+          // 3. Get URL
+          const downloadUrl = await getDownloadURL(storageRef);
+          setForm(f => ({ ...f, avatarUrl: downloadUrl }));
+        } catch (err) {
+          console.error('Avatar upload error:', err);
+          alert('فشل في رفع الصورة للسحاب');
+        } finally {
+          setUploading(false);
+        }
       };
       img.src = event.target?.result as string;
     };
@@ -180,8 +202,10 @@ export default function EditBioModal({ bio, onClose }: EditBioModalProps) {
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="flex-1 px-3 py-2 bg-system-bg border border-system-border rounded-lg text-sm text-system-text outline-none focus:border-system-accent transition-colors file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-system-accent file:text-black hover:file:bg-system-accent/80 file:cursor-pointer"
+                    disabled={uploading}
+                    className="flex-1 px-3 py-2 bg-system-bg border border-system-border rounded-lg text-sm text-system-text outline-none focus:border-system-accent transition-colors file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-system-accent file:text-black hover:file:bg-system-accent/80 file:cursor-pointer disabled:opacity-50"
                   />
+                  {uploading && <Loader2 size={16} className="animate-spin text-system-accent" />}
                   <span className="text-xs text-system-muted">أو ضِف رابط:</span>
                   <input
                     value={form.avatarUrl || ''}
