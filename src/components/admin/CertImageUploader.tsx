@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
 import type { DragEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -287,10 +289,29 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
           <ImageCropper
             imageSrc={rawImageSrc}
             onClose={() => setRawImageSrc(null)}
-            onCropComplete={(croppedBase64) => {
-              onChange(croppedBase64);
-              setStatus('done');
-              setRawImageSrc(null);
+            onCropComplete={async (croppedBase64) => {
+              try {
+                setStatus('processing');
+                setRawImageSrc(null);
+                
+                // 1. Convert Base64 to Blob
+                const response = await fetch(croppedBase64);
+                const blob = await response.blob();
+                
+                // 2. Upload to Firebase Storage
+                const storageRef = ref(storage, `certs/${certId}-${Date.now()}.jpg`);
+                await uploadBytes(storageRef, blob);
+                
+                // 3. Get URL
+                const downloadUrl = await getDownloadURL(storageRef);
+                
+                onChange(downloadUrl);
+                setStatus('done');
+              } catch (err: any) {
+                console.error('Upload error:', err);
+                setError('فشل في رفع الصورة للسحاب: ' + (err.message || 'خطأ غير معروف'));
+                setStatus('error');
+              }
             }}
           />
         )}
