@@ -72,10 +72,25 @@ export async function getCroppedImg(
 
   if (!croppedCtx) return '';
 
-  croppedCanvas.width = pixelCrop.width;
-  croppedCanvas.height = pixelCrop.height;
+  // 3. Resize to stay under Firestore 1MB limit (Max 1000px)
+  const MAX_DIM = 1000;
+  let finalWidth = pixelCrop.width;
+  let finalHeight = pixelCrop.height;
 
-  // Draw the section of the rotated image from the first canvas onto the final canvas
+  if (finalWidth > MAX_DIM || finalHeight > MAX_DIM) {
+    if (finalWidth > finalHeight) {
+      finalHeight = (MAX_DIM / finalWidth) * finalHeight;
+      finalWidth = MAX_DIM;
+    } else {
+      finalWidth = (MAX_DIM / finalHeight) * finalWidth;
+      finalHeight = MAX_DIM;
+    }
+  }
+
+  croppedCanvas.width = finalWidth;
+  croppedCanvas.height = finalHeight;
+
+  // Draw the section of the rotated image from the first canvas onto the final canvas with resizing
   croppedCtx.drawImage(
     canvas,
     pixelCrop.x,
@@ -84,11 +99,11 @@ export async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    finalWidth,
+    finalHeight
   );
 
-  return croppedCanvas.toDataURL('image/jpeg', 0.85);
+  return croppedCanvas.toDataURL('image/jpeg', 0.6);
 }
 
 export default function ImageCropper({ imageSrc, onClose, onCropComplete }: ImageCropperProps) {
