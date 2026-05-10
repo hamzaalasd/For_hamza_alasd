@@ -56,35 +56,48 @@
 }
 
 @media print {
-  /* Hide standard dark UI and grid */
+  /* ─── Reset body for print ─────────────────── */
   body {
-    background: white !important;
+    background: #ffffff !important;
     background-image: none !important;
-    color: black !important;
-    font-size: 10.5pt;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  
-  /* Hide the main app wrapper */
+
+  /* ─── Hide main dark-mode app ──────────────── */
   #main-app {
     display: none !important;
   }
 
-  /* Guarantee ATS-friendly print */
+  /* ─── Show the resume ──────────────────────── */
+  .print\:block {
+    display: block !important;
+  }
+
+  /* ─── ATS-safe print guarantees ────────────── */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     box-shadow: none !important;
     text-shadow: none !important;
   }
-  
+
+  /* ─── A4 single page ───────────────────────── */
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 0mm;
   }
 
-  /* Avoid page breaks inside key blocks */
-  section, tr, div {
+  /* ─── Prevent mid-section breaks ───────────── */
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  tr, p {
     page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
 
