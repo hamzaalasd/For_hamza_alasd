@@ -72,8 +72,8 @@ export async function getCroppedImg(
 
   if (!croppedCtx) return '';
 
-  // 3. Resize to stay under Firestore 1MB limit (Max 1000px)
-  const MAX_DIM = 1000;
+  // 3. Resize to stay under Firestore 1MB limit (Max 800px)
+  const MAX_DIM = 800;
   let finalWidth = pixelCrop.width;
   let finalHeight = pixelCrop.height;
 
@@ -103,7 +103,7 @@ export async function getCroppedImg(
     finalHeight
   );
 
-  return croppedCanvas.toDataURL('image/jpeg', 0.6);
+  return croppedCanvas.toDataURL('image/jpeg', 0.4);
 }
 
 export default function ImageCropper({ imageSrc, onClose, onCropComplete }: ImageCropperProps) {
