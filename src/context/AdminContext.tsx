@@ -106,11 +106,14 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | null>(null);
 
 // ─── Save to Firestore ────────────────────────
+const sanitizeData = (data: any) => JSON.parse(JSON.stringify(data));
+
 async function saveToFirestore(data: Record<string, unknown>) {
   try {
+    const cleanData = sanitizeData(data);
     const ref = doc(db, 'portfolio', 'data');
-    await setDoc(ref, data, { merge: true });
-    console.log('✅ Firestore saved:', Object.keys(data));
+    await setDoc(ref, cleanData, { merge: true });
+    console.log('✅ Firestore saved:', Object.keys(cleanData));
   } catch (err: any) {
     const msg = err?.message || 'Unknown save error';
     console.error('❌ Firestore save error:', err?.code, msg);
