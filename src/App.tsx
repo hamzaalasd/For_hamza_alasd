@@ -61,6 +61,7 @@ function AppInner() {
 
   const [booting, setBooting] = useState(true);
   const [language, setLanguage] = useState<Language>('ar');
+  const [printLang, setPrintLang] = useState<Language | null>(null);
   const [activeSection, setActiveSection] = useState('bio');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
 
@@ -102,6 +103,16 @@ function AppInner() {
   }, [language]);
 
   const toggleLanguage = () => setLanguage(prev => prev === 'ar' ? 'en' : 'ar');
+
+  const handlePrint = (lang: Language) => {
+    setPrintLang(lang);
+    setTimeout(() => {
+      const originalTitle = document.title;
+      document.title = lang === 'ar' ? `سي في ${bio.nameAr}` : `CV ${bio.nameEn}`;
+      window.print();
+      setTimeout(() => { document.title = originalTitle; }, 100);
+    }, 200); // Wait for React to re-render ResumePrintView with the new language
+  };
 
   if (booting) {
     return <TerminalBoot language={language} onComplete={() => setBooting(false)} />;
@@ -296,18 +307,24 @@ function AppInner() {
                       >
                         {language === 'ar' ? 'رؤية أعمالي' : 'See Work'}
                       </button>
-                      <button
-                        onClick={() => {
-                          const originalTitle = document.title;
-                          document.title = language === 'ar' ? `سي في ${bio.nameAr}` : `CV ${bio.nameEn}`;
-                          window.print();
-                          setTimeout(() => { document.title = originalTitle; }, 100);
-                        }}
-                        className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center group"
-                        title={language === 'ar' ? 'تنزيل السيرة الذاتية (PDF)' : 'Download Resume (PDF)'}
-                      >
-                        <FileDown size={18} className="group-hover:scale-110 transition-transform" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handlePrint('ar')}
+                          className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center gap-2 group font-mono font-bold"
+                          title="تنزيل النسخة العربية"
+                        >
+                          <FileDown size={18} className="group-hover:-translate-y-1 transition-transform" />
+                          <span>PDF (AR)</span>
+                        </button>
+                        <button
+                          onClick={() => handlePrint('en')}
+                          className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center gap-2 group font-mono font-bold"
+                          title="Download English Version"
+                        >
+                          <FileDown size={18} className="group-hover:-translate-y-1 transition-transform" />
+                          <span>PDF (EN)</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -601,7 +618,7 @@ function AppInner() {
         skills={skills}
         certifications={certifications}
         experiences={experiences}
-        language={language}
+        language={printLang || language}
       />
     </>
   );
