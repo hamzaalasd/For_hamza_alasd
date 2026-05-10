@@ -88,7 +88,7 @@ export async function getCroppedImg(
     pixelCrop.height
   );
 
-  return croppedCanvas.toDataURL('image/jpeg', 0.95);
+  return croppedCanvas.toDataURL('image/jpeg', 0.85);
 }
 
 export default function ImageCropper({ imageSrc, onClose, onCropComplete }: ImageCropperProps) {

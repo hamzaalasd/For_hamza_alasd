@@ -9,8 +9,8 @@ import ImageCropper from './ImageCropper';
 
 interface CertImageUploaderProps {
   certId: string;
-  imageUrl?: string;
-  onChange: (url: string | undefined) => void;
+  imageUrl?: string | null;
+  onChange: (url: string | null) => void;
 }
 
 type UploadStatus = 'idle' | 'processing' | 'done' | 'error';
@@ -51,7 +51,7 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
   };
 
   const removeImage = () => {
-    onChange(undefined);
+    onChange(null);
     setStatus('idle');
   };
 
@@ -221,7 +221,7 @@ export default function CertImageUploader({ certId, imageUrl, onChange }: CertIm
         <div className="pt-2">
           <input
             value={imageUrl || ''}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => onChange(e.target.value || null)}
             placeholder="أو ضِف رابط الصورة هنا (https://...)"
             className="w-full px-3 py-2 text-xs bg-system-bg border border-system-border rounded-lg text-system-text placeholder:text-system-muted/40 outline-none focus:border-system-accent transition-colors"
           />
