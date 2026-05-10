@@ -62,6 +62,7 @@ function AppInner() {
   const [booting, setBooting] = useState(true);
   const [language, setLanguage] = useState<Language>('ar');
   const [printLang, setPrintLang] = useState<Language | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [activeSection, setActiveSection] = useState('bio');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
 
@@ -106,12 +107,13 @@ function AppInner() {
 
   const handlePrint = (lang: Language) => {
     setPrintLang(lang);
+    setShowPrintModal(false);
     setTimeout(() => {
       const originalTitle = document.title;
       document.title = lang === 'ar' ? `سي في ${bio.nameAr}` : `CV ${bio.nameEn}`;
       window.print();
       setTimeout(() => { document.title = originalTitle; }, 100);
-    }, 200); // Wait for React to re-render ResumePrintView with the new language
+    }, 300); // Wait for React to re-render ResumePrintView with the new language and modal to close
   };
 
   if (booting) {
@@ -307,24 +309,14 @@ function AppInner() {
                       >
                         {language === 'ar' ? 'رؤية أعمالي' : 'See Work'}
                       </button>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handlePrint('ar')}
-                          className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center gap-2 group font-mono font-bold"
-                          title="تنزيل النسخة العربية"
-                        >
-                          <FileDown size={18} className="group-hover:-translate-y-1 transition-transform" />
-                          <span>PDF (AR)</span>
-                        </button>
-                        <button
-                          onClick={() => handlePrint('en')}
-                          className="px-4 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center gap-2 group font-mono font-bold"
-                          title="Download English Version"
-                        >
-                          <FileDown size={18} className="group-hover:-translate-y-1 transition-transform" />
-                          <span>PDF (EN)</span>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setShowPrintModal(true)}
+                        className="px-6 py-3 border border-system-border hover:text-system-accent hover:border-system-accent transition-colors rounded flex items-center justify-center gap-2 group font-bold"
+                        title={language === 'ar' ? 'تنزيل السيرة الذاتية (PDF)' : 'Download Resume (PDF)'}
+                      >
+                        <FileDown size={18} className="group-hover:-translate-y-1 transition-transform" />
+                        <span>{language === 'ar' ? 'تنزيل الـ CV' : 'Download CV'}</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -605,6 +597,65 @@ function AppInner() {
                 className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-system-accent hover:text-black text-white rounded-full transition-colors backdrop-blur-md"
               >
                 <X size={20} />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Print Language Selection Modal */}
+      <AnimatePresence>
+        {showPrintModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            onClick={() => setShowPrintModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              className="relative w-full max-w-sm bg-system-card border border-system-border rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="h-1 w-full bg-gradient-to-r from-transparent via-system-accent to-transparent" />
+              
+              <div className="p-6 text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-system-accent/10 border border-system-accent/30 mx-auto flex items-center justify-center mb-4">
+                  <FileDown size={24} className="text-system-accent" />
+                </div>
+                <h3 className="text-xl font-bold text-system-text">
+                  {language === 'ar' ? 'تنزيل السيرة الذاتية' : 'Download CV'}
+                </h3>
+                <p className="text-sm text-system-muted">
+                  {language === 'ar' ? 'اختر لغة السيرة الذاتية التي ترغب بتنزيلها' : 'Select the language for your resume'}
+                </p>
+              </div>
+
+              <div className="p-4 grid grid-cols-2 gap-3 border-t border-system-border bg-system-bg/50">
+                <button
+                  onClick={() => handlePrint('ar')}
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-system-border bg-system-card hover:border-system-accent hover:bg-system-accent/5 transition-all group"
+                >
+                  <span className="text-2xl">🇸🇦</span>
+                  <span className="font-bold font-mono text-sm group-hover:text-system-accent transition-colors">العربية</span>
+                </button>
+                <button
+                  onClick={() => handlePrint('en')}
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-system-border bg-system-card hover:border-system-accent hover:bg-system-accent/5 transition-all group"
+                >
+                  <span className="text-2xl">🇺🇸</span>
+                  <span className="font-bold font-mono text-sm group-hover:text-system-accent transition-colors">English</span>
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setShowPrintModal(false)}
+                className="absolute top-4 right-4 p-1.5 text-system-muted hover:text-system-text hover:bg-system-border rounded-lg transition-colors"
+              >
+                <X size={18} />
               </button>
             </motion.div>
           </motion.div>
