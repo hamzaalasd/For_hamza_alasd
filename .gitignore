@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Secret credentials — NEVER commit these
+service-account.json
+*.pem
+*.key
