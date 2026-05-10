@@ -70,6 +70,7 @@ export default function ImageCropper({ imageSrc, onClose, onCropComplete }: Imag
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [aspect, setAspect] = useState(1.414); // Default to A4 Landscape
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const onCropCompleteInternal = useCallback((_: Area, croppedAreaPixels: Area) => {
@@ -121,7 +122,7 @@ export default function ImageCropper({ imageSrc, onClose, onCropComplete }: Imag
               crop={crop}
               zoom={zoom}
               rotation={rotation}
-              aspect={4 / 3} // Certificates are roughly 4:3 or A4. User can crop free if we remove aspect? Actually let's not enforce aspect so they can crop any part.
+              aspect={aspect}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onRotationChange={setRotation}
@@ -131,6 +132,42 @@ export default function ImageCropper({ imageSrc, onClose, onCropComplete }: Imag
 
           {/* Controls */}
           <div className="p-4 border-t border-system-border bg-system-card space-y-4">
+            
+            {/* Aspect Ratio Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-xs font-mono text-system-muted me-2">شكل الشهادة:</span>
+              <button
+                onClick={() => setAspect(1.414)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors border ${aspect === 1.414 ? 'bg-system-accent text-black border-system-accent' : 'bg-system-bg border-system-border text-system-muted hover:border-system-accent'}`}
+              >
+                A4 عرضي
+              </button>
+              <button
+                onClick={() => setAspect(1 / 1.414)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors border ${aspect === 1 / 1.414 ? 'bg-system-accent text-black border-system-accent' : 'bg-system-bg border-system-border text-system-muted hover:border-system-accent'}`}
+              >
+                A4 طولي
+              </button>
+              <button
+                onClick={() => setAspect(4 / 3)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors border ${aspect === 4 / 3 ? 'bg-system-accent text-black border-system-accent' : 'bg-system-bg border-system-border text-system-muted hover:border-system-accent'}`}
+              >
+                عرضي (4:3)
+              </button>
+              <button
+                onClick={() => setAspect(3 / 4)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors border ${aspect === 3 / 4 ? 'bg-system-accent text-black border-system-accent' : 'bg-system-bg border-system-border text-system-muted hover:border-system-accent'}`}
+              >
+                طولي (3:4)
+              </button>
+              <button
+                onClick={() => setAspect(1)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors border ${aspect === 1 ? 'bg-system-accent text-black border-system-accent' : 'bg-system-bg border-system-border text-system-muted hover:border-system-accent'}`}
+              >
+                مربع (1:1)
+              </button>
+            </div>
+
             <div className="flex items-center gap-4">
               <label className="text-xs font-mono text-system-muted whitespace-nowrap">Zoom</label>
               <input
