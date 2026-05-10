@@ -107,7 +107,7 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
         {exps.length > 0 && (
           <>
             <H2 label={ar ? 'الخبرة المهنية' : 'PROFESSIONAL EXPERIENCE'} />
-            {exps.slice(0, 4).map((exp, i) => (
+            {exps.filter(exp => exp.showInResume !== false).map((exp, i) => (
               <div key={exp.id} style={{ marginTop: i === 0 ? '2pt' : '6pt' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                   <colgroup><col style={{ width: '68%' }} /><col style={{ width: '32%' }} /></colgroup>
@@ -164,7 +164,7 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
         {projects.length > 0 && (
           <>
             <H2 label={ar ? 'المشاريع البارزة' : 'KEY PROJECTS'} />
-            {projects.slice(0, 3).map((p, i) => (
+            {projects.filter(p => p.showInResume !== false).map((p, i) => (
               <div key={p.id} style={{ marginTop: i === 0 ? '2pt' : '5pt' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                   <colgroup><col style={{ width: '65%' }} /><col style={{ width: '35%' }} /></colgroup>
@@ -198,7 +198,7 @@ export default function ResumePrintView({ bio, projects, skills, certifications,
             <H2 label={ar ? 'الشهادات المهنية' : 'CERTIFICATIONS'} />
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '2pt' }}>
               <tbody>
-                {certs.map(c => (
+                {certs.filter(c => c.showInResume !== false).map(c => (
                   <tr key={c.id} style={{ verticalAlign: 'top' }}>
                     <td style={{ paddingBottom: '3pt', paddingInlineEnd: '8pt', verticalAlign: 'top' }}>
                       <strong style={{ fontSize: '8.5pt', color: K }}>{ar ? c.title.ar : c.title.en}</strong>

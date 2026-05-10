@@ -157,6 +157,24 @@ export default function EditCertModal({ cert, onClose, mode }: EditCertModalProp
                   onChange={(url) => setForm(f => ({ ...f, imageUrl: url }))}
                 />
               </div>
+
+              <div className="pt-4 border-t border-system-border">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative flex items-center justify-center w-5 h-5 border rounded border-system-border group-hover:border-system-accent transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={form.showInResume !== false}
+                      onChange={e => setForm(f => ({ ...f, showInResume: e.target.checked }))}
+                      className="absolute opacity-0 inset-0 cursor-pointer"
+                    />
+                    {form.showInResume !== false && <div className="w-2.5 h-2.5 bg-system-accent rounded-sm" />}
+                  </div>
+                  <div>
+                    <div className="text-sm text-system-text font-bold">Show in PDF Resume</div>
+                    <div className="text-[10px] font-mono text-system-muted">إظهار هذه الشهادة عند طباعة السيرة الذاتية</div>
+                  </div>
+                </label>
+              </div>
             </div>
 
             {/* Footer */}

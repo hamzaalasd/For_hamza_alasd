@@ -15,6 +15,7 @@ export interface Project {
   githubUrl?: string;
   demoUrl?: string;
   images?: string[]; // صور المشروع
+  showInResume?: boolean;
 }
 
 export interface Skill {
@@ -34,6 +35,7 @@ export interface Certification {
   tech: string;
   imageUrl?: string; // URL صورة الشهادة للمعاينة
   credentialId?: string;
+  showInResume?: boolean;
 }
 
 export interface Experience {
@@ -44,6 +46,7 @@ export interface Experience {
   endDate: string; // 'Present' or date
   description: { ar: string; en: string };
   technologies: string[];
+  showInResume?: boolean;
 }
 
 export const projects: Project[] = [
